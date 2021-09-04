@@ -351,7 +351,7 @@ void main()
 	float vistaR = dot(h,normalize(normCoord));
 	float borde = dot(normalize(vista),normalize(normCoord));
 	vec4 diffuseColor = (mostrar != 0.0 && cargada == 1.0) ? textureColor : vec4(1.0,0.0,gl_FragCoord.z*gl_FragCoord.z,1.0);
-	if (borde < 0.15){
+	if (abs(borde) < 0.15){
 		gl_FragColor = diffuseColor + vec4(1.0,1.0,1.0, 1.0 - borde);
 	}else{
 		gl_FragColor =  diffuseColor * vec4(0.1, 0.1, 0.1, 1) + luzNormal * (diffuseColor);
