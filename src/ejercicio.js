@@ -105,6 +105,7 @@ class MeshDrawer
 
 		// 1. Compilamos el programa de shaders
 		this.prog = InitShaderProgram(meshVS, meshFS);
+		this.toon = InitShaderProgram(null, pokeFS);
 
 		// 2. Obtenemos los IDs de las variables uniformes en los shaders
 		this.mvp = gl.getUniformLocation(this.prog, "mvp");
@@ -114,6 +115,13 @@ class MeshDrawer
 		this.mostrar = gl.getUniformLocation(this.prog, "mostrar");
 		this.cargada = gl.getUniformLocation(this.prog, "cargada");
 		this.color = gl.getUniformLocation(this.prog, "color");
+
+		//COSAS SOBEL
+		this.sobel_y = gl.getUniformLocation(this.toon, "sobel_y");
+		this.sobel_x = gl.getUniformLocation(this.toon, "sobel_x");
+		this.texColor = gl.getUniformLocation(this.toon, "uTexColor");
+		this.texNormal = gl.getUniformLocation(this.toon, "uTexNormals");
+		this.resolusion = gl.getUniformLocation(this.toon, "uResolution");
 
 		this.l = gl.getUniformLocation(this.prog, "l");
 		this.shininess= gl.getUniformLocation(this.prog, "shininess");
@@ -139,6 +147,21 @@ class MeshDrawer
 			0, 0, 1, 0,
 			0, 0, 0, 1,
 		]);
+
+		//Inicializamos las variables Sobel
+		gl.uniformMatrix3fv(this.sobel_y, false, [
+			1.0, 0.0, -1.0,
+			2.0, 0.0, -2.0,
+			1.0, 0.0, -1.0 
+		]);
+		gl.uniformMatrix3fv(this.sobel_x, false, [
+			1.0, 2.0, 1.0,
+			0.0, 0.0, 0.0,
+			-1.0, -2.0, -1.0 
+		]);
+
+		gl.uniform2f(this.resolusion, window.screen.availWidth * window.devicePixelRatio,
+			window.screen.availHeight * window.devicePixelRatio);
 		// ...
 	}
 	
@@ -214,6 +237,9 @@ class MeshDrawer
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferNorm);
 		gl.vertexAttribPointer(this.normPos, 3, gl.FLOAT, false, 0, 0);
 		gl.enableVertexAttribArray(this.normPos);
+
+		gl.useProgram(this.toon);
+
 		// ...
 		// Dibujamos
 		if(!this.inicio)
@@ -233,7 +259,7 @@ class MeshDrawer
 		gl.uniform1f(this.cargada, 1);
 		gl.activeTexture(gl.TEXTURE0);
 		gl.bindTexture(gl.TEXTURE_2D, this.texture);
-		gl.uniform1i(this.color, 0);
+		gl.uniform1i(this.color, 0); //QUE ONDA ESTO?
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
 		gl.generateMipmap(gl.TEXTURE_2D);
 
@@ -316,7 +342,7 @@ var meshVS = `
 // Pow:         https://thebookofshaders.com/glossary/?search=pow
 
 var meshFS =`
-	precision mediump float;
+precision mediump float;
 uniform mat3 mn;
 uniform vec3 l;
 
@@ -357,4 +383,97 @@ void main()
 		gl_FragColor =  diffuseColor * vec4(0.1, 0.1, 0.1, 1) + luzNormal * (diffuseColor);
 	}
 }`
-;
+	;
+
+
+var pokeFS = `
+// first render target from the first pass
+uniform sampler2D uTexColor;
+// second render target from the first pass
+uniform sampler2D uTexNormals;
+
+uniform vec2 uResolution;
+
+in vec2 fsInUV;
+
+out vec4 fsOut0;
+
+void main(void)
+{
+  float dx = 1.0 / uResolution.x;
+  float dy = 1.0 / uResolution.y;
+
+  vec3 center = sampleNrm( uTexNormals, vec2(0.0, 0.0) );
+
+  // sampling just these 3 neighboring fragments keeps the outline thin.
+  vec3 top = sampleNrm( uTexNormals, vec2(0.0, dy) );
+  vec3 topRight = sampleNrm( uTexNormals, vec2(dx, dy) );
+  vec3 right = sampleNrm( uTexNormals, vec2(dx, 0.0) );
+
+  // the rest is pretty arbitrary, but seemed to give me the
+  // best-looking results for whatever reason.
+
+  vec3 t = center - top;
+  vec3 r = center - right;
+  vec3 tr = center - topRight;
+
+  t = abs( t );
+  r = abs( r );
+  tr = abs( tr );
+
+  float n;
+  n = max( n, t.x );
+  n = max( n, t.y );
+  n = max( n, t.z );
+  n = max( n, r.x );
+  n = max( n, r.y );
+  n = max( n, r.z );
+  n = max( n, tr.x );
+  n = max( n, tr.y );
+  n = max( n, tr.z );
+
+  // threshold and scale.
+  n = 1.0 - clamp( clamp((n * 2.0) - 0.8, 0.0, 1.0) * 1.5, 0.0, 1.0 );
+
+  fsOut0.rgb = texture(uTexColor, fsInUV).rgb * (0.1 + 0.9*n);
+}
+
+`;
+
+
+var sobelFS = `
+out vec4 FragColor;
+in vec2 TexCoords;
+uniform sampler2D colorTexture;
+uniform sampler2D depthTexture;
+uniform float far;
+uniform float near;
+uniform vec2 uResolution;
+
+float LinearizeDepth(float z)
+{
+     float n = near;
+     float f = far;
+     return (2.0 * n) / (f + n - z * (f - n));  
+}
+
+void main()
+{ 
+    vec3 colorDiff = texture(colorTexture, TexCoords).rgb;
+    mat3 I;
+    vec3 texel;
+    for (int i=-1; i<2; i++) {
+        for (int j=-1; j<2; j++) {
+            float depth = LinearizeDepth(texture(depthTexture, TexCoords + vec2(i-1, j-1)).r);
+            I[i + 1][j + 1] = depth; 
+        }
+    }
+    float gx = dot(sobel_x[0], I[0]) + dot(sobel_x[1], I[1]) + dot(sobel_x[2], I[2]); 
+    float gy = dot(sobel_y[0], I[0]) + dot(sobel_y[1], I[1]) + dot(sobel_y[2], I[2]);
+
+    float g = sqrt(pow(gx, 2.0)+pow(gy, 2.0));
+
+    FragColor = vec4(colorDiff - vec3(g), 1.0);
+}
+`
+	;
