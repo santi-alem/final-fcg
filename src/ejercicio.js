@@ -105,7 +105,7 @@ class MeshDrawer
 
 		// 1. Compilamos el programa de shaders
 		this.prog = InitShaderProgram(meshVS, meshFS);
-		this.toon = InitShaderProgram(null, pokeFS);
+		// this.toon = InitShaderProgram(meshVS, pokeFS);
 
 		// 2. Obtenemos los IDs de las variables uniformes en los shaders
 		this.mvp = gl.getUniformLocation(this.prog, "mvp");
@@ -117,11 +117,11 @@ class MeshDrawer
 		this.color = gl.getUniformLocation(this.prog, "color");
 
 		//COSAS SOBEL
-		this.sobel_y = gl.getUniformLocation(this.toon, "sobel_y");
-		this.sobel_x = gl.getUniformLocation(this.toon, "sobel_x");
-		this.texColor = gl.getUniformLocation(this.toon, "uTexColor");
-		this.texNormal = gl.getUniformLocation(this.toon, "uTexNormals");
-		this.resolusion = gl.getUniformLocation(this.toon, "uResolution");
+		// this.sobel_y = gl.getUniformLocation(this.toon, "sobel_y");
+		// this.sobel_x = gl.getUniformLocation(this.toon, "sobel_x");
+		// this.texColor = gl.getUniformLocation(this.toon, "uTexColor");
+		// this.texNormal = gl.getUniformLocation(this.toon, "uTexNormals");
+		// this.resolusion = gl.getUniformLocation(this.toon, "uResolution");
 
 		this.l = gl.getUniformLocation(this.prog, "l");
 		this.shininess= gl.getUniformLocation(this.prog, "shininess");
@@ -132,6 +132,7 @@ class MeshDrawer
 		this.normPos = gl.getAttribLocation(this.prog, "normPos");
 
 		// 4. Obtenemos los IDs de los atributos de los vértices en los shaders
+		this.texture = gl.createTexture();
 		this.texture = gl.createTexture();
 		this.bufferPos = gl.createBuffer();
 		this.bufferTex = gl.createBuffer();
@@ -218,7 +219,6 @@ class MeshDrawer
 		
 		// 1. Seleccionamos el shader
 		gl.useProgram(this.prog);
-
 		// 2. Setear matriz de transformacion
 		//ACÁ HAY QUE REHACER LA MATRIZ DE TRANSFORMACIÓN
 		gl.uniformMatrix4fv(this.mvp, false, matrixMVP);
@@ -238,7 +238,7 @@ class MeshDrawer
 		gl.vertexAttribPointer(this.normPos, 3, gl.FLOAT, false, 0, 0);
 		gl.enableVertexAttribArray(this.normPos);
 
-		gl.useProgram(this.toon);
+		// gl.useProgram(this.toon);
 
 		// ...
 		// Dibujamos
@@ -313,6 +313,8 @@ class MeshDrawer
 var meshVS = `
 	attribute vec3 pos;
 	attribute vec2 texPos;
+	varying vec2 fsInUV;
+
 	attribute vec3 normPos;
 	uniform mat4 mvp;
 	uniform mat4 mv;
@@ -329,6 +331,7 @@ var meshVS = `
 		gl_Position = mvp * invertida * vec4(pos, 1);
 		vertCoord = vec4(pos, 1);
 		texCoord = texPos;
+		fsInUV = texPos;
 		normCoord = mvNormal * normPos;
 		vecMV = mv * vec4(pos, 1);
 
@@ -377,16 +380,17 @@ void main()
 	float vistaR = dot(h,normalize(normCoord));
 	float borde = dot(normalize(vista),normalize(normCoord));
 	vec4 diffuseColor = (mostrar != 0.0 && cargada == 1.0) ? textureColor : vec4(1.0,0.0,gl_FragCoord.z*gl_FragCoord.z,1.0);
-	if (abs(borde) < 0.15){
-		gl_FragColor = diffuseColor + vec4(1.0,1.0,1.0, 1.0 - borde);
-	}else{
-		gl_FragColor =  diffuseColor * vec4(0.1, 0.1, 0.1, 1) + luzNormal * (diffuseColor);
-	}
+	// if (abs(borde) < 0.15){
+	// 	gl_FragColor = diffuseColor + vec4(1.0,1.0,1.0, 1.0 - borde);
+	// }else{
+	// 	gl_FragColor =  diffuseColor * vec4(0.1, 0.1, 0.1, 1) + luzNormal * (diffuseColor);
+	// }
 }`
 	;
 
 
 var pokeFS = `
+precision mediump float;
 // first render target from the first pass
 uniform sampler2D uTexColor;
 // second render target from the first pass
@@ -394,9 +398,13 @@ uniform sampler2D uTexNormals;
 
 uniform vec2 uResolution;
 
-in vec2 fsInUV;
+varying vec2 fsInUV;
 
-out vec4 fsOut0;
+varying vec4 fsOut0;
+
+vec3 sampleNrm(sampler2D normaltex, vec2 texcoords) {
+    return texture2D(normaltex, texcoords).xyz;
+}
 
 void main(void)
 {
@@ -435,7 +443,7 @@ void main(void)
   // threshold and scale.
   n = 1.0 - clamp( clamp((n * 2.0) - 0.8, 0.0, 1.0) * 1.5, 0.0, 1.0 );
 
-  fsOut0.rgb = texture(uTexColor, fsInUV).rgb * (0.1 + 0.9*n);
+  gl_FragColor = vec4(texture2D(uTexColor, fsInUV).rgb * (0.1 + 0.9*n),1);
 }
 
 `;
@@ -443,7 +451,7 @@ void main(void)
 
 var sobelFS = `
 out vec4 FragColor;
-in vec2 TexCoords;
+varying vec2 TexCoords;
 uniform sampler2D colorTexture;
 uniform sampler2D depthTexture;
 uniform float far;
