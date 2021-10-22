@@ -131,27 +131,29 @@ class MeshDrawer
 		canvas.height = pixelRatio * canvas.clientHeight;
 		self.targetTextureWidth  = (canvas.width  / pixelRatio);
 		self.targetTextureHeight = (canvas.height / pixelRatio);
+		gl.uniform2f(this.resolution, self.targetTextureWidth, self.targetTextureHeight);
 		this.targetTexture = gl.createTexture();
 		// Create and bind the framebuffer
 		this.frameBuffer = gl.createFramebuffer();
+	}
+
+	bindFrameBuffer() {
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
 		gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
-		{
-			// define size and format of level 0
-			const level = 0;
-			const internalFormat = gl.RGBA;
-			const border = 0;
-			const format = gl.RGBA;
-			const type = gl.UNSIGNED_BYTE;
-			const data = null;
-			gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
-				self.targetTextureWidth, self.targetTextureHeight, border,
-				format, type, data);
-			// set the filtering so we don't need mips and it's not filtered
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-		}
+		// define size and format of level 0
+		const level = 0;
+		const internalFormat = gl.RGBA;
+		const border = 0;
+		const format = gl.RGBA;
+		const type = gl.UNSIGNED_BYTE;
+		const data = null;
+		gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
+			self.targetTextureWidth, self.targetTextureHeight, border,
+			format, type, data);
+		// set the filtering so we don't need mips and it's not filtered
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 		gl.framebufferTexture2D(
 			gl.FRAMEBUFFER,
 			gl.COLOR_ATTACHMENT0,  // attach texture as COLOR_ATTACHMENT0
@@ -211,6 +213,7 @@ class MeshDrawer
 		this.normalTex = gl.getUniformLocation(this.prog, "normalTex");
 		this.l = gl.getUniformLocation(this.prog, "l");
 		this.shininess = gl.getUniformLocation(this.prog, "shininess");
+		this.resolution = gl.getUniformLocation(this.prog, "resolution;");
 	}
 
 	getMeshFS() {
@@ -271,7 +274,7 @@ class MeshDrawer
 	draw( matrixMVP, matrixMV, matrixNormal, frameBuffer)
 	{
 		// [COMPLETAR] Completar con lo necesario para dibujar la colección de triángulos en WebGL
-		
+
 		// 1. Seleccionamos el shader
 		gl.useProgram(this.prog);
 		// 2. Setear matriz de transformacion
@@ -293,6 +296,9 @@ class MeshDrawer
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferNorm);
 		gl.vertexAttribPointer(this.normPos, 3, gl.FLOAT, false, 0, 0);
 		gl.enableVertexAttribArray(this.normPos);
+
+		this.bindFrameBuffer();
+
 		// gl.useProgram(this.toon);
 		// ...
 		// Dibujamos
@@ -300,13 +306,15 @@ class MeshDrawer
 
 			gl.uniform1f(this.primeraPasada, 1.0);
 			gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
+			gl.bindTexture(gl.TEXTURE_2D, null);
 			gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles * 3);
-			gl.clearColor(0, 0, 0, 1);
-			gl.clear(gl.COLOR_BUFFER_BIT| gl.DEPTH_BUFFER_BIT);
 			gl.uniform1f(this.primeraPasada, 0.0);
 			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 			gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
+			gl.activeTexture(gl.TEXTURE0);
 			gl.uniform1i(this.normalTex, 0); //QUE ONDA ESTO?
+			gl.clearColor(0, 0, 0, 1);
+			gl.clear(gl.COLOR_BUFFER_BIT| gl.DEPTH_BUFFER_BIT);
 			gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles * 3);
 		}
 	}
@@ -323,10 +331,10 @@ class MeshDrawer
 
 		gl.useProgram(this.prog);
 		gl.uniform1f(this.cargada, 1);
-		gl.activeTexture(gl.TEXTURE0);
+		gl.activeTexture(gl.TEXTURE1);
 		gl.bindTexture(gl.TEXTURE_2D, this.texture);
-		gl.uniform1i(this.color, 0); //QUE ONDA ESTO?
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
+		gl.uniform1i(this.color, 1); //QUE ONDA ESTO?
+		gl.texImage2D(gl.TEXTURE_2D, 1, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
 		gl.generateMipmap(gl.TEXTURE_2D);
 
 		// [COMPLETAR] Ahora que la textura ya está seteada, debemos setear 
@@ -377,7 +385,6 @@ var meshVS = `
 	attribute vec3 pos;
 	attribute vec2 texPos;
 	varying vec2 fsInUV;
-
 	attribute vec3 normPos;
 	uniform mat4 mvp;
 	uniform mat4 mv;
@@ -413,6 +420,7 @@ var meshFS =`
 precision mediump float;
 uniform mat3 mn;
 uniform vec3 l;
+uniform vec2 resolution;
 
 varying vec2 texCoord;
 varying vec3 normCoord;
@@ -455,11 +463,11 @@ void main()
 	// 	gl_FragColor =  diffuseColor * vec4(0.1, 0.1, 0.1, 1) + luzNormal * (diffuseColor);
 	// }
 	if (primeraPasada == 0.0){
-		vec2 posTextNorm = vec2(fract(gl_FragCoord.xy / 50.0));
-		// vec2 posTextNorm = vec2(1,1);
-		vec4 normalValue = texture2D(normalTex, texCoord);
+		vec2 posTextNorm =  vec2(gl_FragCoord.x / resolution.y, gl_FragCoord.y / resolution.x) ;
+		vec4 normalValue = texture2D(normalTex, posTextNorm);
 		// gl_FragColor =  diffuseColor * vec4(0.1, 0.1, 0.1, 1) + luzNormal * (diffuseColor);
-		gl_FragColor = normalValue;
+		gl_FragColor = vec4(posTextNorm, 1 ,1);
+		// gl_FragColor = normalValue;
 	}else{
 		gl_FragColor =  vec4(normCoord, 1);
 		}
