@@ -126,18 +126,19 @@ class MeshDrawer
 		// ...
 
 		// Textura del renbder
-		const pixelRatio = window.devicePixelRatio || 1;
-		canvas.width  = pixelRatio * canvas.clientWidth;
-		canvas.height = pixelRatio * canvas.clientHeight;
-		self.targetTextureWidth  = (canvas.width  / pixelRatio);
-		self.targetTextureHeight = (canvas.height / pixelRatio);
-		gl.uniform2f(this.resolution, self.targetTextureWidth, self.targetTextureHeight);
+
 		this.targetTexture = gl.createTexture();
 		// Create and bind the framebuffer
 		this.frameBuffer = gl.createFramebuffer();
 	}
 
 	bindFrameBuffer() {
+		const pixelRatio = window.devicePixelRatio || 1;
+		canvas.width  = pixelRatio * canvas.clientWidth;
+		canvas.height = pixelRatio * canvas.clientHeight;
+		self.targetTextureWidth  = (canvas.width  / pixelRatio);
+		self.targetTextureHeight = (canvas.height / pixelRatio);
+		gl.uniform2f(this.resolution, self.targetTextureWidth, self.targetTextureHeight);
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
 		gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
 		// define size and format of level 0
@@ -213,7 +214,7 @@ class MeshDrawer
 		this.normalTex = gl.getUniformLocation(this.prog, "normalTex");
 		this.l = gl.getUniformLocation(this.prog, "l");
 		this.shininess = gl.getUniformLocation(this.prog, "shininess");
-		this.resolution = gl.getUniformLocation(this.prog, "resolution;");
+		this.resolution = gl.getUniformLocation(this.prog, "resolution");
 	}
 
 	getMeshFS() {
@@ -303,7 +304,8 @@ class MeshDrawer
 		// ...
 		// Dibujamos
 		if(!this.inicio) {
-
+			gl.clearColor(0, 0, 0, 1);
+			gl.clear(gl.COLOR_BUFFER_BIT| gl.DEPTH_BUFFER_BIT);
 			gl.uniform1f(this.primeraPasada, 1.0);
 			gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
 			gl.bindTexture(gl.TEXTURE_2D, null);
@@ -455,7 +457,6 @@ void main()
 	vec4 ks = vec4(0.8, 0.8, 0.8, 1.0);
 	vec3 h = normalize(l + normalize(vista));
 	float vistaR = dot(h,normalize(normCoord));
-	float borde = dot(normalize(vista),normalize(normCoord));
 	vec4 diffuseColor = (mostrar != 0.0 && cargada == 1.0) ? textureColor : vec4(1.0,0.0,gl_FragCoord.z*gl_FragCoord.z,1.0);
 	// if (abs(borde) < 0.15){
 	// 	gl_FragColor = diffuseColor + vec4(1.0,1.0,1.0, 1.0 - borde);
@@ -463,13 +464,20 @@ void main()
 	// 	gl_FragColor =  diffuseColor * vec4(0.1, 0.1, 0.1, 1) + luzNormal * (diffuseColor);
 	// }
 	if (primeraPasada == 0.0){
-		vec2 posTextNorm =  vec2(gl_FragCoord.x / resolution.y, gl_FragCoord.y / resolution.x) ;
+		
+		vec2 posTextNorm = gl_FragCoord.xy / resolution.xy;
 		vec4 normalValue = texture2D(normalTex, posTextNorm);
+		float borde = dot(normalize(vista),normalize(normalValue.xyz));
+		// if (abs(borde) < 0.15){
+		// 	gl_FragColor = diffuseColor + vec4(1.0,1.0,1.0, 1.0 - borde);
+		// }else{
+		// 	gl_FragColor =  diffuseColor * vec4(0.1, 0.1, 0.1, 1) + luzNormal * (diffuseColor);
+		// }
+		gl_FragColor = normalValue;
 		// gl_FragColor =  diffuseColor * vec4(0.1, 0.1, 0.1, 1) + luzNormal * (diffuseColor);
-		gl_FragColor = vec4(posTextNorm, 1 ,1);
-		// gl_FragColor = normalValue;
+		// gl_FragColor = vec4(posTextNorm, 1 ,1);
 	}else{
-		gl_FragColor =  vec4(normCoord, 1);
+		gl_FragColor =  vec4(normalize(normCoord), 1);
 		}
 }`
 	;
