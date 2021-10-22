@@ -98,23 +98,16 @@ function GetModelViewMatrix(
 // [COMPLETAR] Completar la implementación de esta clase.
 class MeshDrawer
 {
-	// El constructor es donde nos encargamos de realizar las inicializaciones necesarias. 
+	// El constructor es donde nos encargamos de realizar las inicializaciones necesarias.
 	constructor()
 	{
 		let inicio = true;
 
 		// 1. Compilamos el programa de shaders
-		this.prog = InitShaderProgram(meshVS, meshFS);
-		// this.toon = InitShaderProgram(meshVS, pokeFS);
+		this.prog = InitShaderProgram(this.getMeshVS(), this.getMeshFS());
 
 		// 2. Obtenemos los IDs de las variables uniformes en los shaders
-		this.mvp = gl.getUniformLocation(this.prog, "mvp");
-		this.mv = gl.getUniformLocation(this.prog, "mv");
-		this.mvNormal = gl.getUniformLocation(this.prog, "mvNormal");
-		this.invertida = gl.getUniformLocation(this.prog, "invertida");
-		this.mostrar = gl.getUniformLocation(this.prog, "mostrar");
-		this.cargada = gl.getUniformLocation(this.prog, "cargada");
-		this.color = gl.getUniformLocation(this.prog, "color");
+		this.set_uniforms();
 
 		//COSAS SOBEL
 		// this.sobel_y = gl.getUniformLocation(this.toon, "sobel_y");
@@ -123,16 +116,51 @@ class MeshDrawer
 		// this.texNormal = gl.getUniformLocation(this.toon, "uTexNormals");
 		// this.resolusion = gl.getUniformLocation(this.toon, "uResolution");
 
-		this.l = gl.getUniformLocation(this.prog, "l");
-		this.shininess= gl.getUniformLocation(this.prog, "shininess");
+
 
 		// 3. Obtenemos los IDs de los atributos de los vértices en los shaders
-		this.Pos = gl.getAttribLocation(this.prog, "pos");
-		this.texPos = gl.getAttribLocation(this.prog, "texPos");
-		this.normPos = gl.getAttribLocation(this.prog, "normPos");
+		this.setAttributes();
 
 		// 4. Obtenemos los IDs de los atributos de los vértices en los shaders
-		this.texture = gl.createTexture();
+		this.setBuffers();
+		// ...
+
+		// Textura del renbder
+		const pixelRatio = window.devicePixelRatio || 1;
+		canvas.width  = pixelRatio * canvas.clientWidth;
+		canvas.height = pixelRatio * canvas.clientHeight;
+		self.targetTextureWidth  = (canvas.width  / pixelRatio);
+		self.targetTextureHeight = (canvas.height / pixelRatio);
+		this.targetTexture = gl.createTexture();
+		// Create and bind the framebuffer
+		this.frameBuffer = gl.createFramebuffer();
+		gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
+		gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
+		{
+			// define size and format of level 0
+			const level = 0;
+			const internalFormat = gl.RGBA;
+			const border = 0;
+			const format = gl.RGBA;
+			const type = gl.UNSIGNED_BYTE;
+			const data = null;
+			gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
+				self.targetTextureWidth, self.targetTextureHeight, border,
+				format, type, data);
+			// set the filtering so we don't need mips and it's not filtered
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		}
+		gl.framebufferTexture2D(
+			gl.FRAMEBUFFER,
+			gl.COLOR_ATTACHMENT0,  // attach texture as COLOR_ATTACHMENT0
+			gl.TEXTURE_2D,         // attach a 2D texture
+			this.targetTexture,           // the texture to attach
+			0);                    // the mip level to render to (must be 0 in WebGL1)
+	}
+
+	setBuffers() {
 		this.texture = gl.createTexture();
 		this.bufferPos = gl.createBuffer();
 		this.bufferTex = gl.createBuffer();
@@ -153,20 +181,47 @@ class MeshDrawer
 		gl.uniformMatrix3fv(this.sobel_y, false, [
 			1.0, 0.0, -1.0,
 			2.0, 0.0, -2.0,
-			1.0, 0.0, -1.0 
+			1.0, 0.0, -1.0
 		]);
 		gl.uniformMatrix3fv(this.sobel_x, false, [
 			1.0, 2.0, 1.0,
 			0.0, 0.0, 0.0,
-			-1.0, -2.0, -1.0 
+			-1.0, -2.0, -1.0
 		]);
 
 		gl.uniform2f(this.resolusion, window.screen.availWidth * window.devicePixelRatio,
 			window.screen.availHeight * window.devicePixelRatio);
-		// ...
 	}
-	
-	// Esta función se llama cada vez que el usuario carga un nuevo
+
+	setAttributes() {
+		this.Pos = gl.getAttribLocation(this.prog, "pos");
+		this.texPos = gl.getAttribLocation(this.prog, "texPos");
+		this.normPos = gl.getAttribLocation(this.prog, "normPos");
+	}
+
+	set_uniforms() {
+		this.mvp = gl.getUniformLocation(this.prog, "mvp");
+		this.mv = gl.getUniformLocation(this.prog, "mv");
+		this.mvNormal = gl.getUniformLocation(this.prog, "mvNormal");
+		this.invertida = gl.getUniformLocation(this.prog, "invertida");
+		this.primeraPasada = gl.getUniformLocation(this.prog, "primeraPasada");
+		this.mostrar = gl.getUniformLocation(this.prog, "mostrar");
+		this.cargada = gl.getUniformLocation(this.prog, "cargada");
+		this.color = gl.getUniformLocation(this.prog, "color");
+		this.normalTex = gl.getUniformLocation(this.prog, "normalTex");
+		this.l = gl.getUniformLocation(this.prog, "l");
+		this.shininess = gl.getUniformLocation(this.prog, "shininess");
+	}
+
+	getMeshFS() {
+		return meshFS;
+	}
+
+	getMeshVS() {
+		return meshVS;
+	}
+
+// Esta función se llama cada vez que el usuario carga un nuevo
 	// archivo OBJ. En los argumentos de esta función llegan un areglo
 	// con las posiciones 3D de los vértices, un arreglo 2D con las
 	// coordenadas de textura y las normales correspondientes a cada 
@@ -213,7 +268,7 @@ class MeshDrawer
 	// la matriz model-view (matrixMV) que es retornada por 
 	// GetModelViewProjection y la matriz de transformación de las 
 	// normales (matrixNormal) que es la inversa transpuesta de matrixMV
-	draw( matrixMVP, matrixMV, matrixNormal )
+	draw( matrixMVP, matrixMV, matrixNormal, frameBuffer)
 	{
 		// [COMPLETAR] Completar con lo necesario para dibujar la colección de triángulos en WebGL
 		
@@ -234,19 +289,30 @@ class MeshDrawer
 		gl.vertexAttribPointer(this.texPos, 2, gl.FLOAT, false, 0, 0);
 		gl.enableVertexAttribArray(this.texPos);
 
+
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferNorm);
 		gl.vertexAttribPointer(this.normPos, 3, gl.FLOAT, false, 0, 0);
 		gl.enableVertexAttribArray(this.normPos);
-
 		// gl.useProgram(this.toon);
-
 		// ...
 		// Dibujamos
-		if(!this.inicio)
+		if(!this.inicio) {
+
+			gl.uniform1f(this.primeraPasada, 1.0);
+			gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
 			gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles * 3);
-   		// 4. AGREGAR LAS COSAS DE LAS NORMALES
+			gl.clearColor(0, 0, 0, 1);
+			gl.clear(gl.COLOR_BUFFER_BIT| gl.DEPTH_BUFFER_BIT);
+			gl.uniform1f(this.primeraPasada, 0.0);
+			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+			gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
+			gl.uniform1i(this.normalTex, 0); //QUE ONDA ESTO?
+			gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles * 3);
+		}
 	}
-	
+
+		// 4. AGREGAR LAS COSAS DE LAS NORMALES
+
 	// Esta función se llama para setear una textura sobre la malla
 	// El argumento es un componente <img> de html que contiene la textura. 
 	setTexture( img )
@@ -262,7 +328,6 @@ class MeshDrawer
 		gl.uniform1i(this.color, 0); //QUE ONDA ESTO?
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
 		gl.generateMipmap(gl.TEXTURE_2D);
-
 
 		// [COMPLETAR] Ahora que la textura ya está seteada, debemos setear 
 		// parámetros uniformes en el fragment shader para que pueda usarla. 
@@ -299,8 +364,6 @@ class MeshDrawer
 	}
 }
 
-
-
 // [COMPLETAR] Calcular iluminación utilizando Blinn-Phong.
 
 // Recordar que: 
@@ -325,10 +388,12 @@ var meshVS = `
 	varying vec3 normCoord;
 	varying vec4 vertCoord;
 	varying vec4 vecMV;
+	varying vec4 positionCord;
 
 	void main()
 	{ 
 		gl_Position = mvp * invertida * vec4(pos, 1);
+		positionCord = gl_Position;
 		vertCoord = vec4(pos, 1);
 		texCoord = texPos;
 		fsInUV = texPos;
@@ -353,11 +418,15 @@ varying vec2 texCoord;
 varying vec3 normCoord;
 varying vec4 vertCoord;
 varying vec4 vecMV;
+varying vec4 positionCord;
 
+
+uniform float primeraPasada;
 uniform float mostrar;
 uniform float cargada;
 uniform float shininess;
 uniform sampler2D color;
+uniform sampler2D normalTex;
 const float niveles = 4.0;
 const float p0 = 0.0;
 const float p1 = 0.2;
@@ -385,8 +454,40 @@ void main()
 	// }else{
 	// 	gl_FragColor =  diffuseColor * vec4(0.1, 0.1, 0.1, 1) + luzNormal * (diffuseColor);
 	// }
+	if (primeraPasada == 0.0){
+		vec2 posTextNorm = vec2(fract(gl_FragCoord.xy / 50.0));
+		// vec2 posTextNorm = vec2(1,1);
+		vec4 normalValue = texture2D(normalTex, texCoord);
+		// gl_FragColor =  diffuseColor * vec4(0.1, 0.1, 0.1, 1) + luzNormal * (diffuseColor);
+		gl_FragColor = normalValue;
+	}else{
+		gl_FragColor =  vec4(normCoord, 1);
+		}
 }`
 	;
+
+
+var normalTextureFS =`
+precision mediump float;
+uniform mat3 mn;
+uniform vec3 l;
+
+varying vec2 texCoord;
+varying vec3 normCoord;
+varying vec4 vertCoord;
+varying vec4 vecMV;
+uniform sampler2D normalTex;
+uniform float mostrar;
+uniform float cargada;
+uniform float shininess;
+uniform sampler2D color;
+
+void main()
+{
+	gl_FragColor =  vec4(normCoord, 1.0);
+}`
+;
+
 
 
 var pokeFS = `
