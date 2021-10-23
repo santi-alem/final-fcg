@@ -278,6 +278,8 @@ class MeshDrawer
 
 		// 1. Seleccionamos el shader
 		gl.useProgram(this.prog);
+		// gl.enable(gl.CULL_FACE);
+		// gl.enable(gl.DEPTH_TEST);
 		// 2. Setear matriz de transformacion
 		//ACÁ HAY QUE REHACER LA MATRIZ DE TRANSFORMACIÓN
 		gl.uniformMatrix4fv(this.mvp, false, matrixMVP);
@@ -307,8 +309,12 @@ class MeshDrawer
 			gl.clearColor(0, 0, 0, 1);
 			gl.clear(gl.COLOR_BUFFER_BIT| gl.DEPTH_BUFFER_BIT);
 			gl.uniform1f(this.primeraPasada, 1.0);
+
 			gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
 			gl.bindTexture(gl.TEXTURE_2D, null);
+			// gl.enable(gl.CULL_FACE);
+			gl.enable(gl.DEPTH_TEST);
+			// gl.cullFace(gl.BACK)
 			gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles * 3);
 			gl.uniform1f(this.primeraPasada, 0.0);
 			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -395,6 +401,7 @@ var meshVS = `
 	// uniform vec3 l;
 	varying vec2 texCoord;
 	varying vec3 normCoord;
+	varying vec3 objectNormCoord;
 	varying vec4 vertCoord;
 	varying vec4 vecMV;
 	varying vec4 positionCord;
@@ -407,6 +414,7 @@ var meshVS = `
 		texCoord = texPos;
 		fsInUV = texPos;
 		normCoord = mvNormal * normPos;
+		objectNormCoord = normPos;
 		vecMV = mv * vec4(pos, 1);
 
 	}
@@ -418,7 +426,7 @@ var meshVS = `
 // Normalize:   https://thebookofshaders.com/glossary/?search=normalize
 // Pow:         https://thebookofshaders.com/glossary/?search=pow
 
-var meshFS =`
+var meshFS = `
 precision mediump float;
 uniform mat3 mn;
 uniform vec3 l;
@@ -429,6 +437,7 @@ varying vec3 normCoord;
 varying vec4 vertCoord;
 varying vec4 vecMV;
 varying vec4 positionCord;
+varying vec3 objectNormCoord;
 
 
 uniform float primeraPasada;
@@ -443,43 +452,53 @@ const float p1 = 0.2;
 const float p2 = 0.2;
 const float p3 = 0.5;
 
+float scaleValue(float value, float min, float max);
+
 void main()
 {
-	float luzNormal = max(0.0,dot(l,normCoord)); //Brightness
-	float nivel = ceil(luzNormal *  niveles);
-	luzNormal = nivel / niveles;
-	luzNormal = p0
-		+ max(0.0,sign(luzNormal - p0)) * p1
-		+ max(0.0,sign(luzNormal - p0 - p1)) * p2
-		+ max(0.0,sign(luzNormal - p0 - p1 - p2)) * p3;
-	vec3 vista = vec3(-vecMV[0], -vecMV[1], -vecMV[2]);
-	vec4 textureColor = texture2D(color, texCoord);
-	vec4 ks = vec4(0.8, 0.8, 0.8, 1.0);
-	vec3 h = normalize(l + normalize(vista));
-	float vistaR = dot(h,normalize(normCoord));
-	vec4 diffuseColor = (mostrar != 0.0 && cargada == 1.0) ? textureColor : vec4(1.0,0.0,gl_FragCoord.z*gl_FragCoord.z,1.0);
-	// if (abs(borde) < 0.15){
-	// 	gl_FragColor = diffuseColor + vec4(1.0,1.0,1.0, 1.0 - borde);
-	// }else{
-	// 	gl_FragColor =  diffuseColor * vec4(0.1, 0.1, 0.1, 1) + luzNormal * (diffuseColor);
-	// }
-	if (primeraPasada == 0.0){
-		
-		vec2 posTextNorm = gl_FragCoord.xy / resolution.xy;
-		vec4 normalValue = texture2D(normalTex, posTextNorm);
-		float borde = dot(normalize(vista),normalize(normalValue.xyz));
-		// if (abs(borde) < 0.15){
-		// 	gl_FragColor = diffuseColor + vec4(1.0,1.0,1.0, 1.0 - borde);
-		// }else{
-		// 	gl_FragColor =  diffuseColor * vec4(0.1, 0.1, 0.1, 1) + luzNormal * (diffuseColor);
-		// }
-		gl_FragColor = normalValue;
-		// gl_FragColor =  diffuseColor * vec4(0.1, 0.1, 0.1, 1) + luzNormal * (diffuseColor);
-		// gl_FragColor = vec4(posTextNorm, 1 ,1);
-	}else{
-		gl_FragColor =  vec4(normalize(normCoord), 1);
-		}
-}`
+    float luzNormal = max(0.0, dot(l, normCoord));//Brightness
+    float nivel = ceil(luzNormal *  niveles);
+    luzNormal = nivel / niveles;
+    luzNormal = p0
+    + max(0.0, sign(luzNormal - p0)) * p1
+    + max(0.0, sign(luzNormal - p0 - p1)) * p2
+    + max(0.0, sign(luzNormal - p0 - p1 - p2)) * p3;
+    vec3 vista = vec3(-vecMV[0], -vecMV[1], -vecMV[2]);
+    vec4 textureColor = texture2D(color, texCoord);
+    vec4 ks = vec4(0.8, 0.8, 0.8, 1.0);
+    vec3 h = normalize(l + normalize(vista));
+    float vistaR = dot(h, normalize(normCoord));
+    vec4 diffuseColor = (mostrar != 0.0 && cargada == 1.0) ? textureColor : vec4(1.0, 0.0, gl_FragCoord.z * gl_FragCoord.z, 1.0);
+	float borde = dot(normalize(vista), normalize(normCoord));
+    // if (abs(borde) < 0.15){
+    // gl_FragColor = diffuseColor + vec4(1.0,1.0,1.0, 1.0 - borde);
+    // }else{
+    // gl_FragColor =  diffuseColor * vec4(0.1, 0.1, 0.1, 1) + luzNormal * (diffuseColor);
+    // }
+    if (primeraPasada == 0.0){
+        vec2 posTextNorm = gl_FragCoord.xy / resolution.xy;
+        vec4 normalValue = texture2D(normalTex, posTextNorm);
+        // float borde = dot(vista, normalValue.xyz);
+        // if (abs(borde) < 0.15){
+        // gl_FragColor = diffuseColor + vec4(1.0,1.0,1.0, 1.0 - borde);
+        // }else{
+        // gl_FragColor =  diffuseColor * vec4(0.1, 0.1, 0.1, 1) + luzNormal * (diffuseColor);
+        // }
+        diffuseColor = normalValue;
+        gl_FragColor = normalValue;
+        // gl_FragColor =  diffuseColor * vec4(0.1, 0.1, 0.1, 1) + luzNormal * (diffuseColor);
+        // gl_FragColor = vec4(posTextNorm, 0 , 1);
+        //     	gl_FragColor =  vec4(normalize(objectNormCoord), 1.0);
+
+    } else {
+    	gl_FragColor =  vec4(normalize(objectNormCoord), 1.0);
+    }
+}
+
+float scaleValue(float value, float min, float max) {
+    return (( 2.0 / (max - min)) *  (value)) - 1.0;
+}
+`
 	;
 
 
