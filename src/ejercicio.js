@@ -316,45 +316,73 @@ var meshVS = `
 // Pow:         https://thebookofshaders.com/glossary/?search=pow
 
 var meshFS =`
-	precision mediump float;
+//precision mediump float;
+//uniform mat3 mn;
+//uniform vec3 l;
+//
+//varying vec2 texCoord;
+//varying vec3 normCoord;
+//varying vec4 vertCoord;
+//varying vec4 vecMV;
+//
+//uniform float mostrar;
+//uniform float cargada;
+//uniform float shininess;
+//uniform sampler2D color;
+//const float niveles = 4.0;
+//const float p0 = 0.0;
+//const float p1 = 0.2;
+//const float p2 = 0.2;
+//const float p3 = 0.5;
+
+//
+
+precision mediump float;
 uniform mat3 mn;
 uniform vec3 l;
-
 varying vec2 texCoord;
 varying vec3 normCoord;
 varying vec4 vertCoord;
 varying vec4 vecMV;
-
 uniform float mostrar;
 uniform float cargada;
 uniform float shininess;
 uniform sampler2D color;
-const float niveles = 4.0;
-const float p0 = 0.0;
-const float p1 = 0.2;
-const float p2 = 0.2;
-const float p3 = 0.5;
 
 void main()
 {
-	float luzNormal = max(0.0,dot(l,normCoord)); //Brightness
-	float nivel = ceil(luzNormal *  niveles);
-	luzNormal = nivel / niveles;
-	luzNormal = p0
-		+ max(0.0,sign(luzNormal - p0)) * p1
-		+ max(0.0,sign(luzNormal - p0 - p1)) * p2
-		+ max(0.0,sign(luzNormal - p0 - p1 - p2)) * p3;
+	//float luzNormal = max(0.0,dot(l,normCoord)); //Brightness
+	////float nivel = ceil(luzNormal *  niveles);
+	////luzNormal = nivel / niveles;
+	////luzNormal = p0
+	////	+ max(0.0,sign(luzNormal - p0)) * p1
+	////	+ max(0.0,sign(luzNormal - p0 - p1)) * p2
+	////	+ max(0.0,sign(luzNormal - p0 - p1 - p2)) * p3;
+	//vec3 vista = vec3(-vecMV[0], -vecMV[1], -vecMV[2]);
+	//vec4 textureColor = texture2D(color, texCoord);
+	//vec4 ks = vec4(0.8, 0.8, 0.8, 1.0);
+	//vec3 h = normalize(l + normalize(vista));
+	//float vistaR = dot(h,normalize(normCoord));
+	//float borde = dot(normalize(vista),normalize(normCoord));
+	//vec4 diffuseColor = (mostrar != 0.0 && cargada == 1.0) ? textureColor : vec4(1.0,0.0,gl_FragCoord.z*gl_FragCoord.z,1.0);
+	//if (abs(borde) < 0.15){
+	//	gl_FragColor = diffuseColor + vec4(1.0, 1.0, 1.0, 1.0 - borde);
+	//}else{
+	//	gl_FragColor =  diffuseColor * vec4(0.1, 0.1, 0.1, 1) + luzNormal * (diffuseColor);
+	//}
+
+	float luzNormal = dot(l,normCoord);
 	vec3 vista = vec3(-vecMV[0], -vecMV[1], -vecMV[2]);
 	vec4 textureColor = texture2D(color, texCoord);
 	vec4 ks = vec4(0.8, 0.8, 0.8, 1.0);
 	vec3 h = normalize(l + normalize(vista));
 	float vistaR = dot(h,normalize(normCoord));
-	float borde = dot(normalize(vista),normalize(normCoord));
-	vec4 diffuseColor = (mostrar != 0.0 && cargada == 1.0) ? textureColor : vec4(1.0,0.0,gl_FragCoord.z*gl_FragCoord.z,1.0);
-	if (abs(borde) < 0.15){
-		gl_FragColor = diffuseColor + vec4(1.0,1.0,1.0, 1.0 - borde);
-	}else{
-		gl_FragColor =  diffuseColor * vec4(0.1, 0.1, 0.1, 1) + luzNormal * (diffuseColor);
-	}
+	luzNormal = smoothstep(0.0, 0.01, luzNormal) + 0.1;// luzNormal > 0.4 ? 1.0 : 0.0;
+	vec4 diffuseColor = (mostrar != 0.0 && cargada == 1.0) ? textureColor : vec4(0.7,0.0,0.5,1.0);//vec4(1.0,0.0,gl_FragCoord.z*gl_FragCoord.z,1.0);
+
+	float sauronDot = 1.0 - dot(normalize(vista),normalize(normCoord));
+	float sauronIntenso = smoothstep(0.716 - 0.01, 0.716 + 0.01, sauronDot);
+	//Primer termino es la luz ambiental
+	gl_FragColor =  (diffuseColor * vec4(0.1, 0.1, 0.1, 1.0) + luzNormal * (diffuseColor + ks * smoothstep(0.005, 0.01, pow(max(0.0,vistaR),shininess)) / luzNormal)) + vec4(0.0,0.3,0.0,1.0) * sauronIntenso;
 }`
 ;
