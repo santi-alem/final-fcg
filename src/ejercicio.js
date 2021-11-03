@@ -377,12 +377,23 @@ void main()
 	vec4 ks = vec4(0.8, 0.8, 0.8, 1.0);
 	vec3 h = normalize(l + normalize(vista));
 	float vistaR = dot(h,normalize(normCoord));
-	luzNormal = smoothstep(0.0, 0.01, luzNormal) + 0.1;// luzNormal > 0.4 ? 1.0 : 0.0;
-	vec4 diffuseColor = (mostrar != 0.0 && cargada == 1.0) ? textureColor : vec4(0.7,0.0,0.5,1.0);//vec4(1.0,0.0,gl_FragCoord.z*gl_FragCoord.z,1.0);
 
+	//luzNormal = smoothstep(0.0, 0.01, luzNormal) + 0.1;
+	luzNormal =  luzNormal > 0.4 ? 1.0 : 0.0;
+
+	vec4 diffuseColor = (mostrar != 0.0 && cargada == 1.0) ? textureColor : vec4(0.5,0.0,0.5,1.0);//vec4(1.0,0.0,gl_FragCoord.z*gl_FragCoord.z,1.0);
+
+	//Primero está el aura solida en los bordes
 	float sauronDot = 1.0 - dot(normalize(vista),normalize(normCoord));
-	float sauronIntenso = smoothstep(0.716 - 0.01, 0.716 + 0.01, sauronDot);
+	//float sauronIntenso = smoothstep(0.716 - 0.01, 0.716 + 0.01, sauronDot);
+	
+	//Esta aura apareciendo solamente en el area iluminada
+	float sauronIntenso = sauronDot * luzNormal;
+	sauronIntenso = smoothstep(0.716 - 0.05, 0.716 + 0.05, sauronIntenso);
+
+	//Aura tranca, blend
+	//float sauronIntenso = sauronDot * pow(luzNormal, 0.1);
 	//Primer termino es la luz ambiental
-	gl_FragColor =  (diffuseColor * vec4(0.1, 0.1, 0.1, 1.0) + luzNormal * (diffuseColor + ks * smoothstep(0.005, 0.01, pow(max(0.0,vistaR),shininess)) / luzNormal)) + vec4(0.0,0.3,0.0,1.0) * sauronIntenso;
+	gl_FragColor =  (diffuseColor * vec4(0.1, 0.1, 0.1, 1.0) + luzNormal * (diffuseColor + ks * smoothstep(0.005, 0.01, pow(max(0.0,vistaR),shininess)) / luzNormal)) + vec4(0.0,0.5,0.0,1.0) * sauronIntenso;
 }`
 ;
