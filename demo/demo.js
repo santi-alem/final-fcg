@@ -5,22 +5,23 @@ let rotX = 0, rotY = 0, transZ = 3, autorot = 0;
 let models = [];
 let toonProgramInfo;
 let imageTexture;
+let cargada = 0;
+let mostrar = 0;
 const settings = {
     lightX: 0,
     lightY: 0,
-    lightZ: 1,
 };
 function degToRad(d) {
     return d * Math.PI / 180;
 }
 
 function updateLightDir() {
-    // const cy = Math.cos(rotY);
-    // const sy = Math.sin(rotY);
-    // const cx = Math.cos(rotX);
-    // const sx = Math.sin(rotX);
-    // return [-sy, cy * sx, -cy * cx];
-    return [settings.lightX, settings.lightY, settings.lightZ]
+    const cy = Math.cos(settings.lightY);
+    const sy = Math.sin(settings.lightY);
+    const cx = Math.cos(settings.lightX);
+    const sx = Math.sin(settings.lightX);
+    return [-sy, cy * sx, -cy * cx];
+    // return [, settings.lightY, settings.lightZ]
 
 }
 
@@ -115,10 +116,10 @@ function drawScene(mv, mvp) {
                     0, 0, 0, 1,
                 ],
                 color: imageTexture,
-                cargada: 0,
-                mostrar: 0,
+                cargada: cargada,
+                mostrar: mostrar,
                 l: updateLightDir(),
-                shininess: Math.pow(10, 1 / 25),
+                shininess: Math.pow(10, 50 / 25),
             };
             webglUtils.setUniforms(toonProgramInfo, programUniforms);
             gl.drawArrays(gl.TRIANGLES, 0, modelObj.positionBuffer.length / 3 );
@@ -188,6 +189,8 @@ function loadImageTexture(url) {
         gl.generateMipmap(gl.TEXTURE_2D);
         render();
     });
+    cargada = 1;
+    mostrar = 1;
     return texture;
 }
 
@@ -201,17 +204,16 @@ function main() {
 
     // setup GLSL programs
     toonProgramInfo = webglUtils.createProgramInfo(gl, ['vertex-shader-toon', 'fragment-shader-toon']);
-    imageTexture = loadImageTexture('https://webglfundamentals.org/webgl/resources/f-texture.png');
+    imageTexture = loadImageTexture('https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg');
 
 
     webglLessonsUI.setupUI(document.querySelector('#ui'), settings, [
         {type: 'slider', key: 'lightX', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
         {type: 'slider', key: 'lightY', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
-        {type: 'slider', key: 'lightZ', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
     ]);
 
     const fieldOfViewRadians = degToRad(60);
-    LoadObj('https://webglfundamentals.org/webgl/resources/models/cube/cube.obj')
+    LoadObj('https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill.obj')
 
 }
 
@@ -258,5 +260,7 @@ window.onload = () => {
     }
     main();
 };
-
+window.onresize = () => {
+    render()
+}
 
