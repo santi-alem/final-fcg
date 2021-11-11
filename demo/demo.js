@@ -183,7 +183,7 @@ function render() {
         [0, 0, transZ],          // position
         [0, 0, 0], // target
         [0, 1, 0],                                              // up
-    ), rotationMatrix(-settings.lightX * Math.PI, -settings.lightY * Math.PI));
+    ), rotationMatrix((-settings.lightX * Math.PI + rotX), (-settings.lightY * Math.PI + rotY)));
     drawScene(perspectiveMatrix, lightProjectionMatrix, lightWorldMatrix);
 }
 
