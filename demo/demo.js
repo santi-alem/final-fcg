@@ -1,16 +1,18 @@
 'use strict';
 let canvas;
 let gl;
-let rotX = 0, rotY = 0, transZ = 3, autorot = 0;
+let rotX = 90, rotY = 0, transZ = 10, autorot = 0;
 let models = [];
 let toonProgramInfo;
 let imageTexture;
 let cargada = 0;
 let mostrar = 0;
 let depthTexture;
-let checkerboardTexture;
 let unusedTexture;
+let checkerboardTexture;
+let depthFramebuffer;
 let shadowProgramInfo;
+const depthTextureSize = 512;
 
 const settings = {
     lightX: 0,
@@ -48,21 +50,30 @@ function ProjectionMatrix(c, z, fov_angle = 60) {
     ];
 }
 
-function ProjectionMatrix(c, z, fov_angle = 60) {
-    var r = c.width / c.height;
-    var n = (z - 1.74);
+function OrthographicMatrix() {
+    var r = canvas.width / canvas.height;
+    var n = (transZ - 1.74);
     const min_n = 0.001;
     if (n < min_n) n = min_n;
-    var f = (z + 1.74);
-    ;
-    var fov = 3.145 * fov_angle / 180;
-    var s = 1 / Math.tan(fov / 2);
-    return [
-        s / r, 0, 0, 0,
-        0, s, 0, 0,
-        0, 0, (n + f) / (f - n), 1,
-        0, 0, -2 * n * f / (f - n), 0
+
+    var left = -transZ * r;
+    var right = transZ * r;
+    var bottom = -transZ;
+    var top = transZ;
+    var near = 400;
+    var far = -400;
+    // let lightProjectionMatrix = ProjectionMatrix(canvas, transZ);
+    let lightProjectionMatrix = [
+        2 / (right - left), 0, 0, 0,
+        0, 2 / (top - bottom), 0, 0,
+        0, 0, 2 / (near - far), 0,
+
+        (left + right) / (left - right),
+        (bottom + top) / (bottom - top),
+        (near + far) / (near - far),
+        1,
     ];
+    return lightProjectionMatrix;
 }
 
 function rotationMatrix(rotationX, rotationY) {
@@ -77,8 +88,7 @@ function rotationMatrix(rotationX, rotationY) {
         Math.sin(rotationY), 0, Math.cos(rotationY), 0,
         0, 0, 0, 1
     ];
-    let rotation = m4.multiply(matrizX, matrizY);
-    return rotation;
+    return m4.multiply(matrizX, matrizY);
 }
 
 function GetModelViewMatrix(
@@ -121,6 +131,9 @@ function enableArrayAttribute(buffer, attribute, size) {
 function generateShadows(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix) {
     mv = GetModelViewMatrix(0, 0, transZ, settings.lightX, settings.lightY);
     gl.useProgram(shadowProgramInfo.program);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
+    gl.viewport(0, 0, depthTextureSize, depthTextureSize);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     webglUtils.setUniforms(shadowProgramInfo, {
         // lightProjectionMatrix * inverse(lightWorldMatrix) * m4.translation(0, 0, 0)
         mvp: m4.multiply(lightProjectionMatrix, lightWorldMatrix)
@@ -134,11 +147,28 @@ function generateShadows(lightWorldMatrix, lightProjectionMatrix, mv, mvp, persp
 
 function drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix) {
     gl.useProgram(toonProgramInfo.program);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    gl.clearColor(0, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    let textureMatrix = m4.identity();
+    textureMatrix = m4.translate(textureMatrix, 0.5, 0.5, 0.5);
+    textureMatrix = m4.scale(textureMatrix, 0.5, 0.5, 0.5);
+    textureMatrix = m4.multiply(textureMatrix, lightProjectionMatrix);
+    // use the inverse of this world matrix to make
+    // a matrix that will transform other positions
+    // to be relative this world space.
+    textureMatrix = m4.multiply(
+        textureMatrix,
+        m4.inverse(lightWorldMatrix));
+
     const nrmTrans = [mv[0], mv[1], mv[2], mv[4], mv[5], mv[6], mv[8], mv[9], mv[10]];
     let programUniforms = {
-        mvp: m4.multiply(lightProjectionMatrix, mv),
+        mvp: m4.multiply(perspectiveMatrix, mv),
         mv: mv,
         mvNormal: nrmTrans,
+        u_textureMatrix: textureMatrix,
         invertida: [
             1, 0, 0, 0,
             0, 1, 0, 0,
@@ -149,6 +179,7 @@ function drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiv
         mostrar: mostrar,
         l: updateLightDir(),
         shininess: Math.pow(10, 50 / 25),
+        u_projectedTexture: depthTexture,
     };
     webglUtils.setUniforms(toonProgramInfo, programUniforms);
     models.forEach(
@@ -159,9 +190,10 @@ function drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiv
 }
 
 function drawScene(perspectiveMatrix, lightProjectionMatrix, lightWorldMatrix) {
-    // Draw with the toon shader
-    let mv = GetModelViewMatrix(3, 0, transZ, rotX, autorot + rotY);
+        // Draw with the toon shader
+    let mv = GetModelViewMatrix(0, 0, transZ, rotX, autorot + rotY);
     let mvp = m4.multiply(perspectiveMatrix, mv);
+
     generateShadows(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix);
     drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix);
 }
@@ -176,8 +208,7 @@ function render() {
     // Clear the canvas AND the depth buffer.
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     let perspectiveMatrix = ProjectionMatrix(canvas, transZ);
-
-    let lightProjectionMatrix = ProjectionMatrix(canvas, transZ);
+    let lightProjectionMatrix = OrthographicMatrix();
 
     const lightWorldMatrix = m4.multiply(m4.lookAt(
         [0, 0, transZ],          // position
@@ -250,6 +281,60 @@ function main() {
     toonProgramInfo = webglUtils.createProgramInfo(gl, ['vertex-shader-toon', 'fragment-shader-toon']);
     shadowProgramInfo = webglUtils.createProgramInfo(gl, ['color-vertex-shader', 'color-fragment-shader']);
     // imageTexture = loadImageTexture('https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg');
+    depthTexture = gl.createTexture();
+
+    gl.bindTexture(gl.TEXTURE_2D, depthTexture);
+    gl.texImage2D(
+        gl.TEXTURE_2D,      // target
+        0,                  // mip level
+        gl.DEPTH_COMPONENT, // internal format
+        depthTextureSize,   // width
+        depthTextureSize,   // height
+        0,                  // border
+        gl.DEPTH_COMPONENT, // format
+        gl.UNSIGNED_INT,    // type
+        null);              // data
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    depthFramebuffer = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
+    gl.framebufferTexture2D(
+        gl.FRAMEBUFFER,       // target
+        gl.DEPTH_ATTACHMENT,  // attachment point
+        gl.TEXTURE_2D,        // texture target
+        depthTexture,         // texture
+        0);                   // mip level
+
+    // create a color texture of the same size as the depth texture
+    // see article why this is needed_
+    unusedTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, unusedTexture);
+    gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA,
+        depthTextureSize,
+        depthTextureSize,
+        0,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        null,
+    );
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    // attach it to the framebuffer
+    gl.framebufferTexture2D(
+        gl.FRAMEBUFFER,        // target
+        gl.COLOR_ATTACHMENT0,  // attachment point
+        gl.TEXTURE_2D,         // texture target
+        unusedTexture,         // texture
+        0);                    // mip level
 
 
     webglLessonsUI.setupUI(document.querySelector('#ui'), settings, [
