@@ -12,11 +12,17 @@ let unusedTexture;
 let checkerboardTexture;
 let depthFramebuffer;
 let shadowProgramInfo;
-const depthTextureSize = 512;
+const depthTextureSize = 1024;
 
 const settings = {
     lightX: 0,
     lightY: 0,
+    cameraX: 0,
+    cameraY: 0,
+    height: 1,
+    width: 1,
+    distance: 400,
+    translation: 0,
 };
 
 function degToRad(d) {
@@ -39,7 +45,6 @@ function ProjectionMatrix(c, z, fov_angle = 60) {
     const min_n = 0.001;
     if (n < min_n) n = min_n;
     var f = (z + 1.74);
-    ;
     var fov = 3.145 * fov_angle / 180;
     var s = 1 / Math.tan(fov / 2);
     return [
@@ -55,15 +60,17 @@ function OrthographicMatrix() {
     var n = (transZ - 1.74);
     const min_n = 0.001;
     if (n < min_n) n = min_n;
+    var f = (transZ + 1.74);
 
-    var left = -transZ * r;
-    var right = transZ * r;
-    var bottom = -transZ;
-    var top = transZ;
+    let projWidth = canvas.width / settings.distance;
+    let projHeight = canvas.height /settings.distance;
+    var left = - projWidth /2;
+    var right = projWidth/2;
+    var bottom = - projHeight/2;
+    var top = projHeight/2;
     var near = 400;
     var far = -400;
-    // let lightProjectionMatrix = ProjectionMatrix(canvas, transZ);
-    let lightProjectionMatrix = [
+    return [
         2 / (right - left), 0, 0, 0,
         0, 2 / (top - bottom), 0, 0,
         0, 0, 2 / (near - far), 0,
@@ -73,7 +80,6 @@ function OrthographicMatrix() {
         (near + far) / (near - far),
         1,
     ];
-    return lightProjectionMatrix;
 }
 
 function rotationMatrix(rotationX, rotationY) {
@@ -161,7 +167,7 @@ function drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiv
     // to be relative this world space.
     textureMatrix = m4.multiply(
         textureMatrix,
-        m4.inverse(lightWorldMatrix));
+        lightWorldMatrix);
 
     const nrmTrans = [mv[0], mv[1], mv[2], mv[4], mv[5], mv[6], mv[8], mv[9], mv[10]];
     let programUniforms = {
@@ -193,8 +199,9 @@ function drawScene(perspectiveMatrix, lightProjectionMatrix, lightWorldMatrix) {
         // Draw with the toon shader
     let mv = GetModelViewMatrix(0, 0, transZ, rotX, autorot + rotY);
     let mvp = m4.multiply(perspectiveMatrix, mv);
-
+    gl.enable(gl.CULL_FACE) // Eliminamos Las caras que enfrentan a la camara/luz
     generateShadows(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix);
+    gl.disable(gl.CULL_FACE)
     drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix);
 }
 
@@ -204,21 +211,22 @@ function render() {
     // Tell WebGL how to convert from clip space to pixels
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     // gl.enable(gl.CULL_FACE);
-    gl.enable(gl.DEPTH_TEST);
     // Clear the canvas AND the depth buffer.
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     let perspectiveMatrix = ProjectionMatrix(canvas, transZ);
     let lightProjectionMatrix = OrthographicMatrix();
 
-    const lightWorldMatrix = m4.multiply(m4.lookAt(
+    let lightWorldMatrix = m4.lookAt(
         [0, 0, transZ],          // position
         [0, 0, 0], // target
         [0, 1, 0],                                              // up
-    ), rotationMatrix((-settings.lightX * Math.PI + rotX), (-settings.lightY * Math.PI + rotY)));
+    );
+    lightWorldMatrix = m4.xRotate(lightWorldMatrix,settings.lightX * Math.PI)
+    lightWorldMatrix = m4.zRotate(lightWorldMatrix,settings.lightY * Math.PI)
     drawScene(perspectiveMatrix, lightProjectionMatrix, lightWorldMatrix);
 }
 
-function LoadObj(objectUrl, textureUrl) {
+function LoadObj(objectUrl, textureUrl, position = [0, 0, 0], rotation = [0, 0, 0]) {
     let texture = loadImageTexture(textureUrl);
     fetch(objectUrl).then(response => {
         response.text().then(
@@ -239,7 +247,7 @@ function LoadObj(objectUrl, textureUrl) {
                 var maxSize = Math.max(size[0], size[1], size[2]);
                 var scale = 1 / maxSize;
                 mesh.shiftAndScale(shift, scale);
-                models.push(new ModelDrawer(mesh.getVertexBuffers(), texture));
+                models.push(new ModelDrawer(mesh.getVertexBuffers(), texture, position));
                 render();
             }
         )
@@ -263,25 +271,16 @@ function loadImageTexture(url) {
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
         // assumes this texture is a power of 2
-        gl.generateMipmap(gl.TEXTURE_2D);
-        render();
+        // gl.generateMipmap(gl.TEXTURE_2D);
+        // render();
     });
     return texture;
 }
 
-function main() {
-    // Get A WebGL context
-    /** @type {HTMLCanvasElement} */
-    gl = canvas.getContext('webgl');
-    if (!gl) {
-        return;
-    }
-
-    // setup GLSL programs
-    toonProgramInfo = webglUtils.createProgramInfo(gl, ['vertex-shader-toon', 'fragment-shader-toon']);
-    shadowProgramInfo = webglUtils.createProgramInfo(gl, ['color-vertex-shader', 'color-fragment-shader']);
-    // imageTexture = loadImageTexture('https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg');
+function set_depth_buffer() {
     depthTexture = gl.createTexture();
+    depthFramebuffer = gl.createFramebuffer();
+    unusedTexture = gl.createTexture();
 
     gl.bindTexture(gl.TEXTURE_2D, depthTexture);
     gl.texImage2D(
@@ -299,7 +298,6 @@ function main() {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-    depthFramebuffer = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
     gl.framebufferTexture2D(
         gl.FRAMEBUFFER,       // target
@@ -310,7 +308,6 @@ function main() {
 
     // create a color texture of the same size as the depth texture
     // see article why this is needed_
-    unusedTexture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, unusedTexture);
     gl.texImage2D(
         gl.TEXTURE_2D,
@@ -329,99 +326,50 @@ function main() {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
     // attach it to the framebuffer
+    gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
     gl.framebufferTexture2D(
         gl.FRAMEBUFFER,        // target
         gl.COLOR_ATTACHMENT0,  // attachment point
         gl.TEXTURE_2D,         // texture target
         unusedTexture,         // texture
         0);                    // mip level
+}
 
-
+function set_setting_sliders() {
     webglLessonsUI.setupUI(document.querySelector('#ui'), settings, [
+        {type: 'slider', key: 'cameraX', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
+        {type: 'slider', key: 'cameraY', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
         {type: 'slider', key: 'lightX', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
         {type: 'slider', key: 'lightY', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
+        {type: 'slider', key: 'distance', min: 0, max: 1000, change: render, precision: 2, step: 1,},
+        {type: 'slider', key: 'height', min: 0, max: 400, change: render, precision: 2, step: 0.001,},
+        {type: 'slider', key: 'width', min: 0, max: 400, change: render, precision: 2, step: 0.001,},
+        {type: 'slider', key: 'translation', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
     ]);
-
-    const fieldOfViewRadians = degToRad(60);
-    LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/12335_The_Thinker_v3_l2.obj'
-        , 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
-    LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/hand.obj'
-        , 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
-
-    set_checkboard_texture();
-    set_depth_textures();
 }
 
-function set_checkboard_texture() {
-    checkerboardTexture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, checkerboardTexture);
-    gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,                // mip level
-        gl.LUMINANCE,     // internal format
-        8,                // width
-        8,                // height
-        0,                // border
-        gl.LUMINANCE,     // format
-        gl.UNSIGNED_BYTE, // type
-        new Uint8Array([  // data
-            0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
-            0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-            0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
-            0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-            0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
-            0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-            0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
-            0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-        ]));
-    gl.generateMipmap(gl.TEXTURE_2D);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-}
+function main() {
+    // Get A WebGL context
+    /** @type {HTMLCanvasElement} */
+    gl = canvas.getContext('webgl');
+    if (!gl) {
+        return;
+    }
+    gl.enable(gl.DEPTH_TEST);
+    gl.getExtension('WEBGL_depth_texture');
 
-function set_depth_textures() {
-    depthTexture = gl.createTexture();
-    const depthTextureSize = 512;
-    gl.bindTexture(gl.TEXTURE_2D, depthTexture);
-    gl.texImage2D(
-        gl.TEXTURE_2D,      // target
-        0,                  // mip level
-        gl.DEPTH_COMPONENT, // internal format
-        depthTextureSize,   // width
-        depthTextureSize,   // height
-        0,                  // border
-        gl.DEPTH_COMPONENT, // format
-        gl.UNSIGNED_INT,    // type
-        null);              // data
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    // setup GLSL programs
+    toonProgramInfo = webglUtils.createProgramInfo(gl, ['vertex-shader-toon', 'fragment-shader-toon']);
+    shadowProgramInfo = webglUtils.createProgramInfo(gl, ['color-vertex-shader', 'color-fragment-shader']);
+    // imageTexture = loadImageTexture('https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg');
+    set_depth_buffer();
+    set_setting_sliders();
 
-    // attach it to the framebuffer
-    unusedTexture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, unusedTexture);
-    gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,
-        gl.RGBA,
-        depthTextureSize,
-        depthTextureSize,
-        0,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        null,
-    );
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-    gl.framebufferTexture2D(
-        gl.FRAMEBUFFER,        // target
-        gl.COLOR_ATTACHMENT0,  // attachment point
-        gl.TEXTURE_2D,         // texture target
-        unusedTexture,         // texture
-        0);                    // mip level
+    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/isometric-low-poly-bedroom.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
+    LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/12335_The_Thinker_v3_l2.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
+    // LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/hand.obj'
+    //     , 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
+    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
 }
 
 window.onload = () => {

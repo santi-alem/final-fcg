@@ -1,10 +1,11 @@
 class ModelDrawer {
-    constructor(meshData, texture) {
+    constructor(meshData, texture, position, rotation) {
         this.bufferPos = create_and_set_buffer(meshData.positionBuffer);
         this.bufferTex = create_and_set_buffer(meshData.texCoordBuffer);
         this.bufferNorm = create_and_set_buffer(meshData.normalBuffer);
         this.size = meshData.positionBuffer.length / 3;
         this.texture = texture;
+
     }
 
     drawToon(mv, mvp, programInfo) {
