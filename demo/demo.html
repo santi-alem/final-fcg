@@ -157,7 +157,7 @@
 
         //luzNormal = smoothstep(0.0, 0.01, luzNormal) + 0.1;
         luzNormal =  luzNormal > 0.4 ? 1.0 : 0.0;
-        luzNormal = shadowLight;
+        luzNormal = shadowLight * luzNormal;
         vec4 diffuseColor = (mostrar != 0.0 && cargada == 1.0) ? textureColor : vec4(gl_FragCoord.z, 1.0 - gl_FragCoord.z, 0.5, 1.0);//vec4(1.0,0.0,gl_FragCoord.z*gl_FragCoord.z,1.0);
 
         //Primero está el aura solida en los bordes

@@ -4,12 +4,10 @@ let gl;
 let rotX = 90, rotY = 0, transZ = 10, autorot = 0;
 let models = [];
 let toonProgramInfo;
-let imageTexture;
 let cargada = 0;
 let mostrar = 0;
 let depthTexture;
 let unusedTexture;
-let checkerboardTexture;
 let depthFramebuffer;
 let shadowProgramInfo;
 const depthTextureSize = 1024;
@@ -25,6 +23,321 @@ const settings = {
     translation: 0,
 };
 
+function setUpWebGL() {
+    // Get A WebGL context
+    /** @type {HTMLCanvasElement} */
+    gl = canvas.getContext('webgl');
+    if (!gl) {
+        return;
+    }
+    gl.enable(gl.DEPTH_TEST);
+    gl.getExtension('WEBGL_depth_texture');
+
+    // setup GLSL programs
+    toonProgramInfo = webglUtils.createProgramInfo(gl, ['vertex-shader-toon', 'fragment-shader-toon']);
+    shadowProgramInfo = webglUtils.createProgramInfo(gl, ['color-vertex-shader', 'color-fragment-shader']);
+    // imageTexture = loadImageTexture('https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg');
+    set_depth_buffer();
+    setSettingUI();
+
+    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/isometric-low-poly-bedroom.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
+    LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/12335_The_Thinker_v3_l2.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
+    // LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/hand.obj'
+    //     , 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
+    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
+}
+
+
+
+
+// Draw the scene.
+function render() {
+    // Hacemos el resize del canvas
+    webglUtils.resizeCanvasToDisplaySize(gl.canvas);
+    // Tell WebGL how to convert from clip space to pixels
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    // gl.enable(gl.CULL_FACE);
+    // Clear the canvas AND the depth buffer.
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    // Creamos la matriz de proyeccion de la camara
+
+    // Rendereamos la escena
+    drawScene();
+}
+
+function drawScene() {
+    // Draw with the toon shader
+    let perspectiveMatrix = ProjectionMatrix(canvas, transZ);
+    //Creamos la matriz de proyeccion de la camara
+    let lightProjectionMatrix = OrthographicMatrix();
+    // Armamos la matriz MV para la Iluminacion
+    let lightWorldMatrix = m4.lookAt(
+        [0, 0, transZ],          // position
+        [0, 0, 0], // target
+        [0, 1, 0],                                              // up
+    );
+    lightWorldMatrix = m4.xRotate(lightWorldMatrix,settings.lightX * Math.PI)
+    lightWorldMatrix = m4.zRotate(lightWorldMatrix,settings.lightY * Math.PI)
+    // Armamos el MV y MVP para la pasada del toon shader
+    let mv = GetModelViewMatrix(0, 0, transZ, rotX, autorot + rotY);
+    let mvp = m4.multiply(perspectiveMatrix, mv);
+
+    gl.enable(gl.CULL_FACE) // Eliminamos Las caras que enfrentan a la camara/luz
+    // Rendereamos en el framebuffer la textura de profundidad para la iluminación
+    drawShadows(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix);
+    gl.disable(gl.CULL_FACE)
+    // Rendereamos la escena de nuevo para el con el toon shader
+    drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix);
+}
+
+function drawShadows(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix) {
+    gl.useProgram(shadowProgramInfo.program);
+    // Hacemos el binding del Framebuffer
+    gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
+    // Seteamos el viewport del tamaño de la textura
+    gl.viewport(0, 0, depthTextureSize, depthTextureSize);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    // Seteamos las variables uniformes
+    webglUtils.setUniforms(shadowProgramInfo, {
+        // lightProjectionMatrix * inverse(lightWorldMatrix) * m4.translation(0, 0, 0)
+        mvp: m4.multiply(lightProjectionMatrix, lightWorldMatrix)
+    });
+    // Dibujamos cada objeto
+    models.forEach(
+        (modelObj) => {
+            modelObj.drawShadow(mv, mvp, shadowProgramInfo)
+        }
+    )
+}
+
+
+function drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix) {
+    gl.useProgram(toonProgramInfo.program);
+    // Sacamos el framebuffer
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    // Seteamos el viewport del tamaño del canvas
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    // Creamos una matrix para transformar los puntos del MV en el mundo de iluminacion
+    let textureMatrix = m4.identity();
+    textureMatrix = m4.translate(textureMatrix, 0.5, 0.5, 0.5);
+    textureMatrix = m4.scale(textureMatrix, 0.5, 0.5, 0.5);
+    textureMatrix = m4.multiply(textureMatrix, lightProjectionMatrix);
+    // use the inverse of this world matrix to make
+    // a matrix that will transform other positions
+    // to be relative this world space.
+    textureMatrix = m4.multiply(
+        textureMatrix,
+        lightWorldMatrix);
+    // MV para normales
+    const nrmTrans = [mv[0], mv[1], mv[2], mv[4], mv[5], mv[6], mv[8], mv[9], mv[10]];
+    // Seteamos todas las uniformes
+    let programUniforms = {
+        mvp: m4.multiply(perspectiveMatrix, mv),
+        mv: mv,
+        mvNormal: nrmTrans,
+        u_textureMatrix: textureMatrix,
+        invertida: [
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1,
+        ],
+        cargada: cargada,
+        mostrar: mostrar,
+        l: updateLightDir(),
+        shininess: Math.pow(10, 50 / 25),
+        u_projectedTexture: depthTexture,
+    };
+    webglUtils.setUniforms(toonProgramInfo, programUniforms);
+    models.forEach(
+        (modelObj) => {
+            modelObj.drawToon(mv, mvp, toonProgramInfo)
+        }
+    )
+}
+
+
+
+function set_depth_buffer() {
+    // Creamos la textura de profundidad en dónde vamos a tener la sombras
+    depthTexture = gl.createTexture();
+    // El frame buffer donde rendereamos lo que esta iluminado
+    depthFramebuffer = gl.createFramebuffer();
+    // Una textura sin usar para completar el framebuffer si no supuestamente no anda
+    unusedTexture = gl.createTexture();
+
+    gl.bindTexture(gl.TEXTURE_2D, depthTexture);
+    gl.texImage2D(
+        gl.TEXTURE_2D,      // target
+        0,                  // mip level
+        gl.DEPTH_COMPONENT, // internal format
+        depthTextureSize,   // width
+        depthTextureSize,   // height
+        0,                  // border
+        gl.DEPTH_COMPONENT, // format
+        gl.UNSIGNED_INT,    // type
+        null);              // data
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
+    gl.framebufferTexture2D(
+        gl.FRAMEBUFFER,       // target
+        gl.DEPTH_ATTACHMENT,  // attachment point
+        gl.TEXTURE_2D,        // texture target
+        depthTexture,         // texture
+        0);                   // mip level
+
+    // create a color texture of the same size as the depth texture
+    // see article why this is needed_
+    gl.bindTexture(gl.TEXTURE_2D, unusedTexture);
+    gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA,
+        depthTextureSize,
+        depthTextureSize,
+        0,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        null,
+    );
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    // attach it to the framebuffer
+    gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
+    gl.framebufferTexture2D(
+        gl.FRAMEBUFFER,        // target
+        gl.COLOR_ATTACHMENT0,  // attachment point
+        gl.TEXTURE_2D,         // texture target
+        unusedTexture,         // texture
+        0);                    // mip level
+}
+
+
+
+
+
+// Seteamos los eventos
+
+window.onload = () => {
+    canvas = document.querySelector('#canvas');
+    canvas.zoom = function (s) {
+        transZ *= s / canvas.height + 1;
+        render();
+    }
+    canvas.onwheel = function () {
+        canvas.zoom(0.3 * event.deltaY);
+    }
+
+    // Evento de click
+    canvas.onmousedown = function () {
+        var cx = event.clientX;
+        var cy = event.clientY;
+        if (event.ctrlKey) {
+            canvas.onmousemove = function () {
+                canvas.zoom(5 * (event.clientY - cy));
+                cy = event.clientY;
+            }
+        } else {
+            // Si se mueve el mouse, actualizo las matrices de rotación
+            canvas.onmousemove = function () {
+                rotY += (cx - event.clientX) / canvas.width * 5;
+                rotX += (cy - event.clientY) / canvas.height * 5;
+                cx = event.clientX;
+                cy = event.clientY;
+                render();
+            }
+        }
+    }
+
+    // Evento soltar el mouse
+    canvas.onmouseup = canvas.onmouseleave = function () {
+        canvas.onmousemove = null;
+    }
+    setUpWebGL();
+};
+window.onresize = () => {
+    render()
+}
+
+
+function LoadObj(objectUrl, textureUrl, position = [0, 0, 0], rotation = [0, 0, 0]) {
+    // Cargamos la textura desde la url
+    let texture = loadImageTexture(textureUrl);
+    // BUscamos el .obj en la url y lo cargamos
+    fetch(objectUrl).then(response => {
+        response.text().then(
+            text => {
+                var mesh = new ObjMesh;
+                mesh.parse(text);
+                var box = mesh.getBoundingBox();
+                var shift = [
+                    -(box.min[0] + box.max[0]) / 2,
+                    -(box.min[1] + box.max[1]) / 2,
+                    -(box.min[2] + box.max[2]) / 2
+                ];
+                var size = [
+                    (box.max[0] - box.min[0]) / 2,
+                    (box.max[1] - box.min[1]) / 2,
+                    (box.max[2] - box.min[2]) / 2
+                ];
+                var maxSize = Math.max(size[0], size[1], size[2]);
+                var scale = 1 / maxSize;
+                mesh.shiftAndScale(shift, scale);
+                models.push(new ModelDrawer(mesh.getVertexBuffers(), texture, position));
+                render();
+            }
+        )
+    })
+}
+
+// Funcion para cargar una textura de una URL
+function loadImageTexture(url) {
+    // Create a texture.
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    // Fill the texture with a 1x1 blue pixel.
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+        new Uint8Array([0, 0, 255, 255]));
+    // Asynchronously load an image
+    const image = new Image();
+    image.crossOrigin = "";
+    image.src = url;
+    image.addEventListener('load', function () {
+        // Now that the image has loaded make copy it to the texture.
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        // assumes this texture is a power of 2
+        gl.generateMipmap(gl.TEXTURE_2D);
+    });
+    return texture;
+}
+// Funcion para cargar una textura de una URL
+
+function setSettingUI() {
+    webglLessonsUI.setupUI(document.querySelector('#ui'), settings, [
+        {type: 'slider', key: 'cameraX', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
+        {type: 'slider', key: 'cameraY', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
+        {type: 'slider', key: 'lightX', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
+        {type: 'slider', key: 'lightY', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
+        {type: 'slider', key: 'distance', min: 0, max: 1000, change: render, precision: 2, step: 1,},
+        {type: 'slider', key: 'height', min: 0, max: 400, change: render, precision: 2, step: 0.001,},
+        {type: 'slider', key: 'width', min: 0, max: 400, change: render, precision: 2, step: 0.001,},
+        {type: 'slider', key: 'translation', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
+    ]);
+}
+
+
+// todo: Mover a un Archivo propio
 function degToRad(d) {
     return d * Math.PI / 180;
 }
@@ -104,8 +417,6 @@ function GetModelViewMatrix(
     rotationX,
     rotationY
 ) {
-    // [COMPLETAR] Modificar el código para formar la matriz de transformación.
-
     // Matriz de traslación
     let rotation = rotationMatrix(rotationX, rotationY);
 
@@ -121,295 +432,5 @@ function GetModelViewMatrix(
     return final;
 }
 
-function create_and_set_buffer(data) {
-    let buffer = gl.createBuffer()
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
-    return buffer;
-}
 
-function enableArrayAttribute(buffer, attribute, size) {
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.vertexAttribPointer(attribute, size, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(attribute);
-}
-
-function generateShadows(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix) {
-    mv = GetModelViewMatrix(0, 0, transZ, settings.lightX, settings.lightY);
-    gl.useProgram(shadowProgramInfo.program);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
-    gl.viewport(0, 0, depthTextureSize, depthTextureSize);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    webglUtils.setUniforms(shadowProgramInfo, {
-        // lightProjectionMatrix * inverse(lightWorldMatrix) * m4.translation(0, 0, 0)
-        mvp: m4.multiply(lightProjectionMatrix, lightWorldMatrix)
-    });
-    models.forEach(
-        (modelObj) => {
-            modelObj.drawShadow(mv, mvp, shadowProgramInfo)
-        }
-    )
-}
-
-function drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix) {
-    gl.useProgram(toonProgramInfo.program);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    gl.clearColor(0, 0, 0, 1);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    let textureMatrix = m4.identity();
-    textureMatrix = m4.translate(textureMatrix, 0.5, 0.5, 0.5);
-    textureMatrix = m4.scale(textureMatrix, 0.5, 0.5, 0.5);
-    textureMatrix = m4.multiply(textureMatrix, lightProjectionMatrix);
-    // use the inverse of this world matrix to make
-    // a matrix that will transform other positions
-    // to be relative this world space.
-    textureMatrix = m4.multiply(
-        textureMatrix,
-        lightWorldMatrix);
-
-    const nrmTrans = [mv[0], mv[1], mv[2], mv[4], mv[5], mv[6], mv[8], mv[9], mv[10]];
-    let programUniforms = {
-        mvp: m4.multiply(perspectiveMatrix, mv),
-        mv: mv,
-        mvNormal: nrmTrans,
-        u_textureMatrix: textureMatrix,
-        invertida: [
-            1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, 1, 0,
-            0, 0, 0, 1,
-        ],
-        cargada: cargada,
-        mostrar: mostrar,
-        l: updateLightDir(),
-        shininess: Math.pow(10, 50 / 25),
-        u_projectedTexture: depthTexture,
-    };
-    webglUtils.setUniforms(toonProgramInfo, programUniforms);
-    models.forEach(
-        (modelObj) => {
-            modelObj.drawToon(mv, mvp, toonProgramInfo)
-        }
-    )
-}
-
-function drawScene(perspectiveMatrix, lightProjectionMatrix, lightWorldMatrix) {
-        // Draw with the toon shader
-    let mv = GetModelViewMatrix(0, 0, transZ, rotX, autorot + rotY);
-    let mvp = m4.multiply(perspectiveMatrix, mv);
-    gl.enable(gl.CULL_FACE) // Eliminamos Las caras que enfrentan a la camara/luz
-    generateShadows(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix);
-    gl.disable(gl.CULL_FACE)
-    drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix);
-}
-
-// Draw the scene.
-function render() {
-    webglUtils.resizeCanvasToDisplaySize(gl.canvas);
-    // Tell WebGL how to convert from clip space to pixels
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    // gl.enable(gl.CULL_FACE);
-    // Clear the canvas AND the depth buffer.
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    let perspectiveMatrix = ProjectionMatrix(canvas, transZ);
-    let lightProjectionMatrix = OrthographicMatrix();
-
-    let lightWorldMatrix = m4.lookAt(
-        [0, 0, transZ],          // position
-        [0, 0, 0], // target
-        [0, 1, 0],                                              // up
-    );
-    lightWorldMatrix = m4.xRotate(lightWorldMatrix,settings.lightX * Math.PI)
-    lightWorldMatrix = m4.zRotate(lightWorldMatrix,settings.lightY * Math.PI)
-    drawScene(perspectiveMatrix, lightProjectionMatrix, lightWorldMatrix);
-}
-
-function LoadObj(objectUrl, textureUrl, position = [0, 0, 0], rotation = [0, 0, 0]) {
-    let texture = loadImageTexture(textureUrl);
-    fetch(objectUrl).then(response => {
-        response.text().then(
-            text => {
-                var mesh = new ObjMesh;
-                mesh.parse(text);
-                var box = mesh.getBoundingBox();
-                var shift = [
-                    -(box.min[0] + box.max[0]) / 2,
-                    -(box.min[1] + box.max[1]) / 2,
-                    -(box.min[2] + box.max[2]) / 2
-                ];
-                var size = [
-                    (box.max[0] - box.min[0]) / 2,
-                    (box.max[1] - box.min[1]) / 2,
-                    (box.max[2] - box.min[2]) / 2
-                ];
-                var maxSize = Math.max(size[0], size[1], size[2]);
-                var scale = 1 / maxSize;
-                mesh.shiftAndScale(shift, scale);
-                models.push(new ModelDrawer(mesh.getVertexBuffers(), texture, position));
-                render();
-            }
-        )
-    })
-}
-
-
-function loadImageTexture(url) {
-    // Create a texture.
-    const texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    // Fill the texture with a 1x1 blue pixel.
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
-        new Uint8Array([0, 0, 255, 255]));
-    // Asynchronously load an image
-    const image = new Image();
-    image.crossOrigin = "";
-    image.src = url;
-    image.addEventListener('load', function () {
-        // Now that the image has loaded make copy it to the texture.
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-        // assumes this texture is a power of 2
-        // gl.generateMipmap(gl.TEXTURE_2D);
-        // render();
-    });
-    return texture;
-}
-
-function set_depth_buffer() {
-    depthTexture = gl.createTexture();
-    depthFramebuffer = gl.createFramebuffer();
-    unusedTexture = gl.createTexture();
-
-    gl.bindTexture(gl.TEXTURE_2D, depthTexture);
-    gl.texImage2D(
-        gl.TEXTURE_2D,      // target
-        0,                  // mip level
-        gl.DEPTH_COMPONENT, // internal format
-        depthTextureSize,   // width
-        depthTextureSize,   // height
-        0,                  // border
-        gl.DEPTH_COMPONENT, // format
-        gl.UNSIGNED_INT,    // type
-        null);              // data
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
-    gl.framebufferTexture2D(
-        gl.FRAMEBUFFER,       // target
-        gl.DEPTH_ATTACHMENT,  // attachment point
-        gl.TEXTURE_2D,        // texture target
-        depthTexture,         // texture
-        0);                   // mip level
-
-    // create a color texture of the same size as the depth texture
-    // see article why this is needed_
-    gl.bindTexture(gl.TEXTURE_2D, unusedTexture);
-    gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,
-        gl.RGBA,
-        depthTextureSize,
-        depthTextureSize,
-        0,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        null,
-    );
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-    // attach it to the framebuffer
-    gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
-    gl.framebufferTexture2D(
-        gl.FRAMEBUFFER,        // target
-        gl.COLOR_ATTACHMENT0,  // attachment point
-        gl.TEXTURE_2D,         // texture target
-        unusedTexture,         // texture
-        0);                    // mip level
-}
-
-function set_setting_sliders() {
-    webglLessonsUI.setupUI(document.querySelector('#ui'), settings, [
-        {type: 'slider', key: 'cameraX', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
-        {type: 'slider', key: 'cameraY', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
-        {type: 'slider', key: 'lightX', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
-        {type: 'slider', key: 'lightY', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
-        {type: 'slider', key: 'distance', min: 0, max: 1000, change: render, precision: 2, step: 1,},
-        {type: 'slider', key: 'height', min: 0, max: 400, change: render, precision: 2, step: 0.001,},
-        {type: 'slider', key: 'width', min: 0, max: 400, change: render, precision: 2, step: 0.001,},
-        {type: 'slider', key: 'translation', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
-    ]);
-}
-
-function main() {
-    // Get A WebGL context
-    /** @type {HTMLCanvasElement} */
-    gl = canvas.getContext('webgl');
-    if (!gl) {
-        return;
-    }
-    gl.enable(gl.DEPTH_TEST);
-    gl.getExtension('WEBGL_depth_texture');
-
-    // setup GLSL programs
-    toonProgramInfo = webglUtils.createProgramInfo(gl, ['vertex-shader-toon', 'fragment-shader-toon']);
-    shadowProgramInfo = webglUtils.createProgramInfo(gl, ['color-vertex-shader', 'color-fragment-shader']);
-    // imageTexture = loadImageTexture('https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg');
-    set_depth_buffer();
-    set_setting_sliders();
-
-    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/isometric-low-poly-bedroom.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
-    LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/12335_The_Thinker_v3_l2.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
-    // LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/hand.obj'
-    //     , 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
-    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
-}
-
-window.onload = () => {
-    canvas = document.querySelector('#canvas');
-    canvas.zoom = function (s) {
-        transZ *= s / canvas.height + 1;
-        render();
-    }
-    canvas.onwheel = function () {
-        canvas.zoom(0.3 * event.deltaY);
-    }
-
-    // Evento de click
-    canvas.onmousedown = function () {
-        var cx = event.clientX;
-        var cy = event.clientY;
-        if (event.ctrlKey) {
-            canvas.onmousemove = function () {
-                canvas.zoom(5 * (event.clientY - cy));
-                cy = event.clientY;
-            }
-        } else {
-            // Si se mueve el mouse, actualizo las matrices de rotación
-            canvas.onmousemove = function () {
-                rotY += (cx - event.clientX) / canvas.width * 5;
-                rotX += (cy - event.clientY) / canvas.height * 5;
-                cx = event.clientX;
-                cy = event.clientY;
-                render();
-            }
-        }
-    }
-
-    // Evento soltar el mouse
-    canvas.onmouseup = canvas.onmouseleave = function () {
-        canvas.onmousemove = null;
-    }
-    main();
-};
-window.onresize = () => {
-    render()
-}
 
