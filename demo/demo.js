@@ -12,15 +12,16 @@ let depthFramebuffer;
 let shadowProgramInfo;
 const depthTextureSize = 1024;
 
+// Todo: Sacar los settings que no hacen nada
 const settings = {
-    lightX: 0,
-    lightY: 0,
+    lightX: 1,
+    lightY: 1,
     cameraX: 0,
     cameraY: 0,
     height: 1,
     width: 1,
     distance: 400,
-    translation: 0,
+    lightDistance: 0,
 };
 
 function setUpWebGL() {
@@ -39,15 +40,13 @@ function setUpWebGL() {
     // imageTexture = loadImageTexture('https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg');
     set_depth_buffer();
     setSettingUI();
-
-    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/isometric-low-poly-bedroom.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
-    LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/12335_The_Thinker_v3_l2.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
+    // Cargamos modelos
+    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/isometric-low-poly-bedroom.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
+    LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/12335_The_Thinker_v3_l2.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg',[0,1,0])
     // LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/hand.obj'
     //     , 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
-    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
+    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg',[0,-1,0])
 }
-
-
 
 
 // Draw the scene.
@@ -59,9 +58,6 @@ function render() {
     // gl.enable(gl.CULL_FACE);
     // Clear the canvas AND the depth buffer.
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    // Creamos la matriz de proyeccion de la camara
-
     // Rendereamos la escena
     drawScene();
 }
@@ -80,7 +76,15 @@ function drawScene() {
     lightWorldMatrix = m4.xRotate(lightWorldMatrix,settings.lightX * Math.PI)
     lightWorldMatrix = m4.zRotate(lightWorldMatrix,settings.lightY * Math.PI)
     // Armamos el MV y MVP para la pasada del toon shader
-    let mv = GetModelViewMatrix(0, 0, transZ, rotX, autorot + rotY);
+    // lightWorldMatrix = GetModelViewMatrix(0, 0, transZ, settings.lightX, settings.lightX);
+    let mv = m4.lookAt(
+        [0, 0, transZ],          // position
+        [0, 0, 0], // target
+        [0, 1, 0],                                              // up
+    );
+    // let mv = GetModelViewMatrix(0, 0, transZ, rotX, autorot + rotY);
+    mv = m4.xRotate(mv,rotX)
+    mv = m4.zRotate(mv,rotY)
     let mvp = m4.multiply(perspectiveMatrix, mv);
 
     gl.enable(gl.CULL_FACE) // Eliminamos Las caras que enfrentan a la camara/luz
@@ -99,14 +103,16 @@ function drawShadows(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspecti
     gl.viewport(0, 0, depthTextureSize, depthTextureSize);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     // Seteamos las variables uniformes
+    let mvpLight = m4.multiply(lightProjectionMatrix, lightWorldMatrix);
     webglUtils.setUniforms(shadowProgramInfo, {
         // lightProjectionMatrix * inverse(lightWorldMatrix) * m4.translation(0, 0, 0)
-        mvp: m4.multiply(lightProjectionMatrix, lightWorldMatrix)
+        mvp: mvpLight
     });
+
     // Dibujamos cada objeto
     models.forEach(
         (modelObj) => {
-            modelObj.drawShadow(mv, mvp, shadowProgramInfo)
+            modelObj.drawShadow(mv, mvpLight, shadowProgramInfo)
         }
     )
 }
@@ -133,6 +139,8 @@ function drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiv
         lightWorldMatrix);
     // MV para normales
     const nrmTrans = [mv[0], mv[1], mv[2], mv[4], mv[5], mv[6], mv[8], mv[9], mv[10]];
+    // mv = lightWorldMatrix;
+    // perspectiveMatrix = lightProjectionMatrix;
     // Seteamos todas las uniformes
     let programUniforms = {
         mvp: m4.multiply(perspectiveMatrix, mv),
@@ -147,7 +155,7 @@ function drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiv
         ],
         cargada: cargada,
         mostrar: mostrar,
-        l: updateLightDir(),
+        l: lightWorldMatrix.slice(8, 11),
         shininess: Math.pow(10, 50 / 25),
         u_projectedTexture: depthTexture,
     };
@@ -332,7 +340,7 @@ function setSettingUI() {
         {type: 'slider', key: 'distance', min: 0, max: 1000, change: render, precision: 2, step: 1,},
         {type: 'slider', key: 'height', min: 0, max: 400, change: render, precision: 2, step: 0.001,},
         {type: 'slider', key: 'width', min: 0, max: 400, change: render, precision: 2, step: 0.001,},
-        {type: 'slider', key: 'translation', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
+        {type: 'slider', key: 'lightDistance', min: -20, max: 20, change: render, precision: 2, step: 0.001,},
     ]);
 }
 

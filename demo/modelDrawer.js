@@ -6,7 +6,7 @@ class ModelDrawer {
         this.bufferNorm = createAndSetBuffer(meshData.normalBuffer);
         this.size = meshData.positionBuffer.length / 3;
         this.texture = texture;
-
+        this.translation = m4.translation(position[0],position[1],position[2])
     }
 
     drawToon(mv, mvp, programInfo) {
@@ -21,6 +21,8 @@ class ModelDrawer {
         // Seteamos la textura
         webglUtils.setUniforms(programInfo, {
             color: this.texture,
+            mvp : m4.multiply(mvp, this.translation),
+            mv : m4.multiply(mv, this.translation),
         });
         // Dibujamos
         gl.drawArrays(gl.TRIANGLES, 0, this.size);
@@ -31,6 +33,10 @@ class ModelDrawer {
         // Seteamos solo el buffer de posiciones
         let Pos = gl.getAttribLocation(prog, "pos");
         enableArrayAttribute(this.bufferPos, Pos, 3)
+        webglUtils.setUniforms(programInfo, {
+            color: this.texture,
+            mvp : m4.multiply(mvp, this.translation),
+        });
         gl.drawArrays(gl.TRIANGLES, 0, this.size);
     }
 
