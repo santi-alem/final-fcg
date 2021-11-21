@@ -71,19 +71,19 @@
 <!-- vertex shader -->
 <script id="color-vertex-shader" type="x-shader/x-vertex">
     attribute vec3 pos;
-    uniform mat4 mvp;
-
+    uniform mat4 objectMatrix;
+    uniform mat4 viewMatrix;
+    uniform mat4 projectionMatrix;
     void main() {
         // Multiply the position by the matrices.
-        gl_Position = mvp * vec4(pos, 1);
+        gl_Position = projectionMatrix * viewMatrix * objectMatrix * vec4(pos, 1);
     }
 </script>
 <!-- fragment shader -->
 <script id="color-fragment-shader" type="x-shader/x-fragment">
     precision mediump float;
     void main() {
-        gl_FragColor = vec4(gl_FragCoord.x, 1.0 - gl_FragCoord.x, gl_FragCoord.y, gl_FragCoord.z);
-//        gl_FragColor = gl_FragCoord;
+        gl_FragColor = vec4(gl_FragCoord.x, 1.0 - gl_FragCoord.x, gl_FragCoord.z, 1.0);
     }
 </script>
 <script id="vertex-shader-toon" type="x-shader/x-vertex">
@@ -91,9 +91,9 @@
     attribute vec2 texPos;
     attribute vec3 normPos;
 
-    uniform mat4 mvp;
-    uniform mat4 mv;
-    uniform mat3 mvNormal;
+    uniform mat4 objectMatrix;
+    uniform mat4 viewMatrix;
+    uniform mat4 projectionMatrix;
     uniform mat4 invertida;
     uniform mat4 u_textureMatrix;
     // uniform vec3 l;
@@ -105,12 +105,12 @@
 
     void main()
     {
-        gl_Position = mvp * vec4(pos, 1);
+        vecMV = viewMatrix * objectMatrix * vec4(pos, 1);
+        gl_Position = projectionMatrix * vecMV;
         vertCoord = vec4(pos, 1);
         texCoord = texPos;
-        normCoord = mvNormal * normPos;
-        vecMV = mv * vec4(pos, 1);
-        v_projectedTexcoord = u_textureMatrix * vec4(pos, 1);
+        normCoord = mat3(objectMatrix) * normPos;
+        v_projectedTexcoord = u_textureMatrix * objectMatrix * vec4(pos, 1);
     }
 </script>
 <!-- fragment shader -->
@@ -118,6 +118,7 @@
     precision mediump float;
     uniform mat3 mn;
     uniform vec3 l;
+    uniform float bias;
 
     varying vec2 texCoord;
     varying vec3 normCoord;
@@ -136,7 +137,7 @@
         float luzNormal = dot(l, normCoord);
 
         vec3 projectedTexcoord = v_projectedTexcoord.xyz / v_projectedTexcoord.w;
-        float currentDepth = projectedTexcoord.z + 0.001;
+        float currentDepth = projectedTexcoord.z + bias;
 
         bool inRange =
         projectedTexcoord.x >= 0.0 &&
@@ -157,8 +158,8 @@
 
         //luzNormal = smoothstep(0.0, 0.01, luzNormal) + 0.1;
         luzNormal =  luzNormal > 0.4 ? 1.0 : 0.0;
-        luzNormal = shadowLight * luzNormal;
-        vec4 diffuseColor = (mostrar != 0.0 && cargada == 1.0) ? textureColor : vec4(gl_FragCoord.z, 1.0 - gl_FragCoord.z, 0.5, 1.0);//vec4(1.0,0.0,gl_FragCoord.z*gl_FragCoord.z,1.0);
+        luzNormal =  luzNormal * shadowLight;
+        vec4 diffuseColor = (mostrar != 0.0 && cargada == 1.0) ? textureColor : vec4(0.2, 0.8, 0.1, 1.0);//vec4(1.0,0.0,gl_FragCoord.z*gl_FragCoord.z,1.0);
 
         //Primero está el aura solida en los bordes
         float sauronDot = 1.0 - dot(normalize(vista), normalize(normCoord));
@@ -171,8 +172,10 @@
         //Aura tranca, blend
         //float sauronIntenso = sauronDot * pow(luzNormal, 0.1);
         //Primer termino es la luz ambiental
-        gl_FragColor =  (diffuseColor * vec4(0.1, 0.1, 0.1, 1.0) + luzNormal  * (diffuseColor + ks * smoothstep(0.005, 0.01, pow(max(0.0, vistaR), shininess)) / luzNormal)) + vec4(0.0, 0.5, 0.0, 1.0) * sauronIntenso;
-//        gl_FragColor = vec4(frame.xyz, 1.0);
+        gl_FragColor =  (diffuseColor * vec4(0.1, 0.1, 0.1, 1.0) + luzNormal  * (diffuseColor + ks * smoothstep(0.005, 0.01, pow(max(0.0, vistaR), shininess)) / luzNormal)) + vec4(0.5, 0.5, 0.5, 1.0) * sauronIntenso;
+//        gl_FragColor = vec4(shadowLight,shadowLight,shadowLight, 1.0);
+//        gl_FragColor = vec4(gl_FragCoord.x, 1.0 - gl_FragCoord.x, gl_FragCoord.z, 1.0);
+
     }
 </script>
 

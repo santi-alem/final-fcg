@@ -1,15 +1,16 @@
 class ModelDrawer {
-    constructor(meshData, texture, position, rotation) {
+    constructor(meshData, texture, position, rotationX, rotationY, scale) {
         // TODO: Usar las posiciones y la rotacion
         this.bufferPos = createAndSetBuffer(meshData.positionBuffer);
         this.bufferTex = createAndSetBuffer(meshData.texCoordBuffer);
         this.bufferNorm = createAndSetBuffer(meshData.normalBuffer);
         this.size = meshData.positionBuffer.length / 3;
         this.texture = texture;
+        // Todo add rotation and scale
         this.translation = m4.translation(position[0],position[1],position[2])
     }
 
-    drawToon(mv, mvp, programInfo) {
+    drawToon(programInfo) {
         const prog = programInfo.program;
         // Seteamos los atributos y los buffer para el
         let Pos = gl.getAttribLocation(prog, "pos");
@@ -21,21 +22,20 @@ class ModelDrawer {
         // Seteamos la textura
         webglUtils.setUniforms(programInfo, {
             color: this.texture,
-            mvp : m4.multiply(mvp, this.translation),
-            mv : m4.multiply(mv, this.translation),
+            objectMatrix : this.translation,
         });
         // Dibujamos
         gl.drawArrays(gl.TRIANGLES, 0, this.size);
     }
 
-    drawShadow(mv, mvp, programInfo) {
+    drawShadow(programInfo) {
         const prog = programInfo.program;
         // Seteamos solo el buffer de posiciones
         let Pos = gl.getAttribLocation(prog, "pos");
         enableArrayAttribute(this.bufferPos, Pos, 3)
         webglUtils.setUniforms(programInfo, {
             color: this.texture,
-            mvp : m4.multiply(mvp, this.translation),
+            objectMatrix : this.translation,
         });
         gl.drawArrays(gl.TRIANGLES, 0, this.size);
     }
