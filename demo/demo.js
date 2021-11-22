@@ -14,15 +14,16 @@ const depthTextureSize = 1024;
 
 // Todo: Sacar los settings que no hacen nada
 const settings = {
-    lightX: 0.5,
-    lightY: 0.5,
+    lightX: -0.5,
+    lightY: -0.5,
     cameraX: 0,
     cameraY: 0,
     height: 1,
     width: 1,
     distance: 180,
     lightDistance: 60,
-    shadowBias: -0.0005,
+    shadowBias: -0.0085,
+    tipoDeRender: true
 };
 
 function setUpWebGL() {
@@ -166,6 +167,7 @@ function drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiv
         shininess: Math.pow(10, 50 / 25),
         u_projectedTexture: depthTexture,
         bias: settings.shadowBias,
+        tipoLuz: settings.tipoDeRender,
     };
     webglUtils.setUniforms(toonProgramInfo, programUniforms);
     models.forEach(
@@ -342,10 +344,10 @@ function setSettingUI() {
         {type: 'slider', key: 'lightY', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
         {type: 'slider', key: 'distance', min: 0, max: 1000, change: render, precision: 2, step: 1,},
         {type: 'slider', key: 'lightDistance', min: 0, max: 50, change: render, precision: 2, step: 0.1,},
-        {type: 'slider', key: 'shadowBias', min: -0.01, max: 0.00001, change: render, precision: 4, step: 0.0001,},
+        { type: 'slider', key: 'shadowBias', min: -0.01, max: 0.00001, change: render, precision: 4, step: 0.0001, },
+        { type: 'checkbox', key: 'tipoDeRender', change: render, }
     ]);
 }
-
 
 // todo: Mover a un Archivo propio
 function degToRad(d) {

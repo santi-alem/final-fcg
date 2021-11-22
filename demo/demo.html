@@ -109,74 +109,75 @@
         gl_Position = projectionMatrix * vecMV;
         vertCoord = vec4(pos, 1);
         texCoord = texPos;
-        normCoord = mat3(objectMatrix) * normPos;
+        normCoord = mat3(viewMatrix * objectMatrix) * normPos;
         v_projectedTexcoord = u_textureMatrix * objectMatrix * vec4(pos, 1);
     }
 </script>
 <!-- fragment shader -->
 <script id="fragment-shader-toon" type="x-shader/x-fragment">
-    precision mediump float;
-    uniform mat3 mn;
-    uniform vec3 l;
-    uniform float bias;
+        precision mediump float;
+        uniform mat3 mn;
+        uniform vec3 l;
+        uniform float bias;
+        uniform float tipoLuz;
 
-    varying vec2 texCoord;
-    varying vec3 normCoord;
-    varying vec4 vertCoord;
-    varying vec4 vecMV;
-    varying vec4 v_projectedTexcoord;
+        varying vec2 texCoord;
+        varying vec3 normCoord;
+        varying vec4 vertCoord;
+        varying vec4 vecMV;
+        varying vec4 v_projectedTexcoord;
 
-    uniform float mostrar;
-    uniform float cargada;
-    uniform float shininess;
-    uniform sampler2D color;
-    uniform sampler2D u_projectedTexture;
+        uniform float mostrar;
+        uniform float cargada;
+        uniform float shininess;
+        uniform sampler2D color;
+        uniform sampler2D u_projectedTexture;
 
-    void main()
-    {
-        float luzNormal = dot(l, normCoord);
+        void main()
+        {
+            float luzNormal = dot(l, normCoord);
 
-        vec3 projectedTexcoord = v_projectedTexcoord.xyz / v_projectedTexcoord.w;
-        float currentDepth = projectedTexcoord.z + bias;
+            vec3 projectedTexcoord = v_projectedTexcoord.xyz / v_projectedTexcoord.w;
+            float currentDepth = projectedTexcoord.z + bias;
 
-        bool inRange =
-        projectedTexcoord.x >= 0.0 &&
-        projectedTexcoord.x <= 1.0 &&
-        projectedTexcoord.y >= 0.0 &&
-        projectedTexcoord.y <= 1.0;
+            bool inRange =
+            projectedTexcoord.x >= 0.0 &&
+            projectedTexcoord.x <= 1.0 &&
+            projectedTexcoord.y >= 0.0 &&
+            projectedTexcoord.y <= 1.0;
 
-        // the 'r' channel has the depth values
-        vec4 frame = texture2D(u_projectedTexture, projectedTexcoord.xy);
-        float projectedDepth = frame.r;
-        float shadowLight = (inRange && projectedDepth <= currentDepth) ? 0.0 : 1.0;
+            // the 'r' channel has the depth values
+            vec4 frame = texture2D(u_projectedTexture, projectedTexcoord.xy);
+            float projectedDepth = frame.r;
+            float shadowLight = (inRange && projectedDepth <= currentDepth) ? 0.0 : 1.0;
 
-        vec3 vista = vec3(-vecMV[0], -vecMV[1], -vecMV[2]);
-        vec4 textureColor = texture2D(color, texCoord);
-        vec4 ks = vec4(0.8, 0.8, 0.8, 1.0);
-        vec3 h = normalize(l + normalize(vista));
-        float vistaR = dot(h, normalize(normCoord));
+            vec3 vista = vec3(-vecMV[0], -vecMV[1], -vecMV[2]);
+            vec4 textureColor = texture2D(color, texCoord);
+            vec4 ks = vec4(0.8, 0.8, 0.8, 1.0);
+            vec3 h = normalize(l + normalize(vista));
+            float vistaR = dot(h, normalize(normCoord));
 
-//        luzNormal = smoothstep(0.0, 0.01, luzNormal) + 0.1;
-        luzNormal =  luzNormal > 0.4 ? 1.0 : 0.0;
-        luzNormal =  luzNormal * shadowLight;
-        vec4 diffuseColor = (mostrar != 0.0 && cargada == 1.0) ? textureColor : vec4(0.2, 0.8, 0.1, 1.0);//vec4(1.0,0.0,gl_FragCoord.z*gl_FragCoord.z,1.0);
+    //        luzNormal = smoothstep(0.0, 0.01, luzNormal) + 0.1;
+            luzNormal =  (luzNormal > 0.4 ? 1.0 : 0.0) * tipoLuz + (1.0 - tipoLuz) * (smoothstep(0.0, 0.01, luzNormal) + 0.1);
+            luzNormal =  luzNormal * shadowLight;
+            vec4 diffuseColor = (mostrar != 0.0 && cargada == 1.0) ? textureColor : vec4(0.2, 0.8, 0.1, 1.0);//vec4(1.0,0.0,gl_FragCoord.z*gl_FragCoord.z,1.0);
 
-        //Primero está el aura solida en los bordes
-        float sauronDot = 1.0 - dot(normalize(vista), normalize(normCoord));
-        //float sauronIntenso = smoothstep(0.716 - 0.01, 0.716 + 0.01, sauronDot);
+            //Primero está el aura solida en los bordes
+            float sauronDot = 1.0 - dot(normalize(vista), normalize(normCoord));
+            //float sauronIntenso = smoothstep(0.716 - 0.01, 0.716 + 0.01, sauronDot);
 
-        //Esta aura apareciendo solamente en el area iluminada
-        float sauronIntenso = sauronDot * luzNormal;
-        sauronIntenso = smoothstep(0.716 - 0.05, 0.716 + 0.05, sauronIntenso);
+            //Esta aura apareciendo solamente en el area iluminada
+            float sauronIntenso = sauronDot * luzNormal;
+            sauronIntenso = smoothstep(0.716 - 0.05, 0.716 + 0.05, sauronIntenso);
 
-        //Aura tranca, blend
-        //                sauronIntenso = sauronDot * pow(luzNormal, 0.1);
-        //Primer termino es la luz ambiental
-        gl_FragColor =  (diffuseColor * vec4(0.1, 0.1, 0.1, 1.0) + luzNormal  * (diffuseColor + ks * smoothstep(0.005, 0.01, pow(max(0.0, vistaR), shininess)) / luzNormal)) + vec4(0.5, 0.5, 0.5, 1.0) * sauronIntenso;
-//        gl_FragColor = vec4(shadowLight,shadowLight,shadowLight, 1.0);
-        //        gl_FragColor = vec4(gl_FragCoord.x, 1.0 - gl_FragCoord.x, gl_FragCoord.z, 1.0);
+            //Aura tranca, blend
+            //                sauronIntenso = sauronDot * pow(luzNormal, 0.1);
+            //Primer termino es la luz ambiental
+            gl_FragColor =  (diffuseColor * vec4(0.1, 0.1, 0.1, 1.0) + luzNormal  * (diffuseColor + ks * smoothstep(0.005, 0.01, pow(max(0.0, vistaR), shininess)) / luzNormal)) + vec4(0.5, 0.5, 0.5, 1.0) * sauronIntenso;
+    //        gl_FragColor = vec4(shadowLight,shadowLight,shadowLight, 1.0);
+            //        gl_FragColor = vec4(gl_FragCoord.x, 1.0 - gl_FragCoord.x, gl_FragCoord.z, 1.0);
 
-    }
+        }
 </script>
 
 </body>
