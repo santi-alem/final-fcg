@@ -22,7 +22,7 @@ const settings = {
     width: 1,
     distance: 180,
     lightDistance: 60,
-    shadowBias: 0.001,
+    shadowBias: -0.0005,
 };
 
 function setUpWebGL() {
@@ -43,11 +43,12 @@ function setUpWebGL() {
     setSettingUI();
     // Cargamos modelos
     // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/isometric-low-poly-bedroom.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
-    LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/12335_The_Thinker_v3_l2.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg', [0, 1, 0])
-    // LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/hand.obj'
-        // , 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
-    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg', [0, -1, 0])
+    // LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/12335_The_Thinker_v3_l2.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg', [0, 1, 0])
+    // LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/elefante.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg', [2, 1, 0])
+    LoadObj('https://raw.githubusercontent.com/santi-alem/fcg-2021-1c/main/tp5/models/among%20us.obj?token=AETBCF7MJ63I35JFPMZRRYTBUURXO', 'https://raw.githubusercontent.com/santi-alem/fcg-2021-1c/main/tp5/models/among%20us.jpg?token=AETBCF776WC5EOOPJSW3YGTBUUR4A')
+    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg', [0, -1, 0])
     LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg', [1, -2, 0])
+    // LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/aircraft/tu-160-blackjack/tu-160-blackjack.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg', [0, 0, 0])
 }
 
 
@@ -87,8 +88,7 @@ function drawScene() {
     // let mv = GetModelViewMatrix(0, 0, transZ, rotX, autorot + rotY);
     mv = m4.xRotate(mv, rotX)
     mv = m4.zRotate(mv, rotY)
-
-    // Esto es para checkear que la
+    // Esto es para checkear que la perspectiva de la luz
     // mv = lightWorldMatrix;
     // perspectiveMatrix = lightProjectionMatrix;
 
@@ -338,15 +338,11 @@ function loadImageTexture(url) {
 
 function setSettingUI() {
     webglLessonsUI.setupUI(document.querySelector('#ui'), settings, [
-        {type: 'slider', key: 'cameraX', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
-        {type: 'slider', key: 'cameraY', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
         {type: 'slider', key: 'lightX', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
         {type: 'slider', key: 'lightY', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
         {type: 'slider', key: 'distance', min: 0, max: 1000, change: render, precision: 2, step: 1,},
-        {type: 'slider', key: 'height', min: 0, max: 400, change: render, precision: 2, step: 0.001,},
-        {type: 'slider', key: 'width', min: 0, max: 400, change: render, precision: 2, step: 0.001,},
         {type: 'slider', key: 'lightDistance', min: 0, max: 50, change: render, precision: 2, step: 0.1,},
-        {type: 'slider', key: 'shadowBias', min: 0, max: 0.5, change: render, precision: 2, step: 0.0001,},
+        {type: 'slider', key: 'shadowBias', min: -0.01, max: 0.00001, change: render, precision: 4, step: 0.0001,},
     ]);
 }
 
