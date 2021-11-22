@@ -73,12 +73,12 @@
         uniform float bias;
         uniform float tipoLuz;
 
-    varying vec2 texCoord;
-    varying vec3 normCoord;
-    varying vec3 normShadowCoord;
-    varying vec4 vertCoord;
-    varying vec4 vecMV;
-    varying vec4 v_projectedTexcoord;
+        varying vec2 texCoord;
+        varying vec3 normCoord;
+        varying vec3 normShadowCoord;
+        varying vec4 vertCoord;
+        varying vec4 vecMV;
+        varying vec4 v_projectedTexcoord;
 
         uniform float mostrar;
         uniform float cargada;
@@ -109,7 +109,7 @@
             vec4 textureColor = texture2D(color, texCoord);
             vec4 ks = vec4(0.8, 0.8, 0.8, 1.0);
             vec3 h = normalize(l + normalize(vista));
-            float vistaR = dot(h, normalize(normShadowCoord)) * 0.2 + dot(h, normalize(normCoord)) * 0.8;
+            float vistaR = (dot(h, normalize(normShadowCoord)) * 0.2 + dot(h, normalize(normCoord)) * 0.8) * shadowLight;
 
     //        luzNormal = smoothstep(0.0, 0.01, luzNormal) + 0.1;
             luzNormal =  (luzNormal > 0.4 ? 1.0 : 0.0) * tipoLuz + (1.0 - tipoLuz) * (smoothstep(0.0, 0.01, luzNormal) + 0.1);

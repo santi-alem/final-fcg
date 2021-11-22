@@ -342,7 +342,7 @@ function setSettingUI() {
         {type: 'slider', key: 'distance', min: 0, max: 1000, change: render, precision: 2, step: 1,},
         {type: 'slider', key: 'lightDistance', min: 0, max: 50, change: render, precision: 2, step: 0.1,},
         { type: 'slider', key: 'shadowBias', min: -0.01, max: 0.00001, change: render, precision: 4, step: 0.0001, },
-        { type: 'slider', key: 'shininess', min: 4, max: 20, change: render, precision: 4, step: 0.0001, },
+        { type: 'slider', key: 'shininess', min: 4, max: 8, change: render, precision: 4, step: 0.0001, },
         { type: 'checkbox', key: 'tipoDeRender', change: render, }
     ]);
 }
