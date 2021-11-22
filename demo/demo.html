@@ -19,56 +19,6 @@
     </div>
 </div>
 <!-- vertex shader -->
-<script id="vertex-shader-3d" type="x-shader/x-vertex">
-    attribute vec4 a_position;
-    attribute vec2 a_texcoord;
-
-    uniform mat4 u_projection;
-    uniform mat4 u_view;
-    uniform mat4 u_world;
-    uniform mat4 u_textureMatrix;
-
-    varying vec2 v_texcoord;
-    varying vec4 v_projectedTexcoord;
-
-    void main() {
-        // Multiply the position by the matrix.
-        vec4 worldPosition = u_world * a_position;
-
-        gl_Position = u_projection * u_view * worldPosition;
-
-        // Pass the texture coord to the fragment shader.
-        v_texcoord = a_texcoord;
-
-        v_projectedTexcoord = u_textureMatrix * worldPosition;
-    }
-</script>
-<!-- fragment shader -->
-<script id="fragment-shader-3d" type="x-shader/x-fragment">
-    precision mediump float;
-
-    // Passed in from the vertex shader.
-    varying vec2 v_texcoord;
-    varying vec4 v_projectedTexcoord;
-
-    uniform vec4 u_colorMult;
-    uniform sampler2D u_texture;
-    uniform sampler2D u_projectedTexture;
-
-    void main() {
-        vec3 projectedTexcoord = v_projectedTexcoord.xyz / v_projectedTexcoord.w;
-        bool inRange =
-        projectedTexcoord.x >= 0.0 &&
-        projectedTexcoord.x <= 1.0 &&
-        projectedTexcoord.y >= 0.0 &&
-        projectedTexcoord.y <= 1.0;
-        vec4 projectedTexColor = texture2D(u_projectedTexture, projectedTexcoord.xy);
-        vec4 texColor = texture2D(u_texture, v_texcoord) * u_colorMult;
-        float projectedAmount = inRange ? 1.0 : 0.0;
-        gl_FragColor = mix(texColor, projectedTexColor, projectedAmount);
-    }
-</script>
-<!-- vertex shader -->
 <script id="color-vertex-shader" type="x-shader/x-vertex">
     attribute vec3 pos;
     uniform mat4 objectMatrix;
@@ -99,6 +49,7 @@
     // uniform vec3 l;
     varying vec2 texCoord;
     varying vec3 normCoord;
+    varying vec3 normShadowCoord;
     varying vec4 vertCoord;
     varying vec4 vecMV;
     varying vec4 v_projectedTexcoord;
@@ -110,6 +61,7 @@
         vertCoord = vec4(pos, 1);
         texCoord = texPos;
         normCoord = mat3(viewMatrix * objectMatrix) * normPos;
+        normShadowCoord = mat3(objectMatrix) * normPos;
         v_projectedTexcoord = u_textureMatrix * objectMatrix * vec4(pos, 1);
     }
 </script>
@@ -121,11 +73,12 @@
         uniform float bias;
         uniform float tipoLuz;
 
-        varying vec2 texCoord;
-        varying vec3 normCoord;
-        varying vec4 vertCoord;
-        varying vec4 vecMV;
-        varying vec4 v_projectedTexcoord;
+    varying vec2 texCoord;
+    varying vec3 normCoord;
+    varying vec3 normShadowCoord;
+    varying vec4 vertCoord;
+    varying vec4 vecMV;
+    varying vec4 v_projectedTexcoord;
 
         uniform float mostrar;
         uniform float cargada;
@@ -133,9 +86,10 @@
         uniform sampler2D color;
         uniform sampler2D u_projectedTexture;
 
-        void main()
-        {
-            float luzNormal = dot(l, normCoord);
+    void main()
+    {
+            float luzNormal = dot(l, normShadowCoord);
+            float shinyLight = dot(l, normCoord);
 
             vec3 projectedTexcoord = v_projectedTexcoord.xyz / v_projectedTexcoord.w;
             float currentDepth = projectedTexcoord.z + bias;
@@ -155,7 +109,7 @@
             vec4 textureColor = texture2D(color, texCoord);
             vec4 ks = vec4(0.8, 0.8, 0.8, 1.0);
             vec3 h = normalize(l + normalize(vista));
-            float vistaR = dot(h, normalize(normCoord));
+            float vistaR = dot(h, normalize(normShadowCoord)) * 0.4 + dot(h, normalize(normCoord)) * 0.6;
 
     //        luzNormal = smoothstep(0.0, 0.01, luzNormal) + 0.1;
             luzNormal =  (luzNormal > 0.4 ? 1.0 : 0.0) * tipoLuz + (1.0 - tipoLuz) * (smoothstep(0.0, 0.01, luzNormal) + 0.1);

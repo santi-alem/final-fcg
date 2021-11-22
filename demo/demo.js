@@ -15,14 +15,14 @@ const depthTextureSize = 1024;
 // Todo: Sacar los settings que no hacen nada
 const settings = {
     lightX: -0.5,
-    lightY: -0.5,
+    lightY: -0.38,
     cameraX: 0,
     cameraY: 0,
     height: 1,
     width: 1,
-    distance: 180,
+    distance: 80,
     lightDistance: 60,
-    shadowBias: -0.0085,
+    shadowBias: -0.01,
     tipoDeRender: true
 };
 
@@ -77,8 +77,8 @@ function drawScene() {
         [0, 0, 0], // target
         [0, 1, 0],                                              // up
     );
-    lightWorldMatrix = m4.xRotate(lightWorldMatrix,settings.lightX * Math.PI)
-    lightWorldMatrix = m4.yRotate(lightWorldMatrix,settings.lightY * Math.PI)
+    lightWorldMatrix = m4.xRotate(lightWorldMatrix, settings.lightX * Math.PI)
+    lightWorldMatrix = m4.yRotate(lightWorldMatrix, settings.lightY * Math.PI)
     // Armamos el MV y MVP para la pasada del toon shader
     // lightWorldMatrix = GetModelViewMatrix(0, 0, transZ, settings.lightX, settings.lightX);
     let mv = m4.lookAt(
