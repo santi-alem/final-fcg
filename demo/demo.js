@@ -10,7 +10,7 @@ let depthTexture;
 let unusedTexture;
 let depthFramebuffer;
 let shadowProgramInfo;
-const depthTextureSize = 1024;
+const depthTextureSize = 2160;
 
 // Todo: Sacar los settings que no hacen nada
 const settings = {
@@ -20,7 +20,10 @@ const settings = {
     distance: 80,
     lightDistance: 60,
     shadowBias: -0.01,
-    tipoDeRender: true
+    tipoDeRender: true,
+    sombrasProyectadas: true,
+    autoRotate: false,
+    contorno: false
 };
 
 function setUpWebGL() {
@@ -42,11 +45,12 @@ function setUpWebGL() {
     // Cargamos modelos
     // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/isometric-low-poly-bedroom.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
     // LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/12335_The_Thinker_v3_l2.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg', [0, 1, 0])
-    // LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/elefante.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg', [2, 1, 0])
-    LoadObj('https://raw.githubusercontent.com/santi-alem/fcg-2021-1c/main/tp5/models/among%20us.obj?token=AETBCF7MJ63I35JFPMZRRYTBUURXO', 'https://raw.githubusercontent.com/santi-alem/fcg-2021-1c/main/tp5/models/among%20us.jpg?token=AETBCF776WC5EOOPJSW3YGTBUUR4A')
+    LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/elefante.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg', [1.25, 0, 0])
+    // LoadObj('https://raw.githubusercontent.com/santi-alem/fcg-2021-1c/main/tp5/models/among%20us.obj?token=AETBCF7MJ63I35JFPMZRRYTBUURXO', 'https://raw.githubusercontent.com/santi-alem/fcg-2021-1c/main/tp5/models/among%20us.jpg?token=AETBCF776WC5EOOPJSW3YGTBUUR4A')
     // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg', [0, -1, 0])
-    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg', [1, -2, 0])
+    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/moon-castle.obj', 'http://i.pinimg.com/originals/44/b1/5a/44b15ad5adfc1f0b195a8fe3c2c09033.jpg', [0, 0, 0])
     // LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/aircraft/tu-160-blackjack/tu-160-blackjack.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg', [0, 0, 0])
+
 }
 
 
@@ -75,7 +79,7 @@ function drawScene() {
         [0, 1, 0],                                              // up
     );
     lightWorldMatrix = m4.xRotate(lightWorldMatrix, settings.lightX * Math.PI)
-    lightWorldMatrix = m4.yRotate(lightWorldMatrix, settings.lightY * Math.PI)
+    lightWorldMatrix = m4.yRotate(lightWorldMatrix, settings.lightY * Math.PI + autorot)
     // Armamos el MV y MVP para la pasada del toon shader
     // lightWorldMatrix = GetModelViewMatrix(0, 0, transZ, settings.lightX, settings.lightX);
     let mv = m4.lookAt(
@@ -85,7 +89,7 @@ function drawScene() {
     );
     // let mv = GetModelViewMatrix(0, 0, transZ, rotX, autorot + rotY);
     mv = m4.xRotate(mv, rotX)
-    mv = m4.zRotate(mv, rotY)
+    mv = m4.yRotate(mv, rotY  + autorot)
     // Esto es para checkear que la perspectiva de la luz
     // mv = lightWorldMatrix;
     // perspectiveMatrix = lightProjectionMatrix;
@@ -165,6 +169,8 @@ function drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiv
         u_projectedTexture: depthTexture,
         bias: settings.shadowBias,
         tipoLuz: settings.tipoDeRender,
+        sombrasProyectadas: settings.sombrasProyectadas,
+        contorno: settings.contorno,
     };
     webglUtils.setUniforms(toonProgramInfo, programUniforms);
     models.forEach(
@@ -341,9 +347,12 @@ function setSettingUI() {
         {type: 'slider', key: 'lightY', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
         {type: 'slider', key: 'distance', min: 0, max: 1000, change: render, precision: 2, step: 1,},
         {type: 'slider', key: 'lightDistance', min: 0, max: 50, change: render, precision: 2, step: 0.1,},
-        { type: 'slider', key: 'shadowBias', min: -0.01, max: 0.00001, change: render, precision: 4, step: 0.0001, },
-        { type: 'slider', key: 'shininess', min: 4, max: 8, change: render, precision: 4, step: 0.0001, },
-        { type: 'checkbox', key: 'tipoDeRender', change: render, }
+        {type: 'slider', key: 'shadowBias', min: -0.01, max: 0.00001, change: render, precision: 4, step: 0.0001,},
+        {type: 'slider', key: 'shininess', min: 4, max: 8, change: render, precision: 4, step: 0.0001,},
+        {type: 'checkbox', key: 'tipoDeRender', change: render,},
+        {type: 'checkbox', key: 'sombrasProyectadas', change: render,},
+        {type: 'checkbox', key: 'contorno', change: render,},
+        {type: 'checkbox', key: 'autoRotate', change: AutoRotate,}
     ]);
 }
 
@@ -362,6 +371,7 @@ function updateLightDir() {
 
 }
 
+// Calcula la matriz de perspectiva (column-major)
 function ProjectionMatrix(c, z, fov_angle = 60) {
     var r = c.width / c.height;
     var n = (z - 1.74);
@@ -387,10 +397,10 @@ function OrthographicMatrix() {
 
     let projWidth = r * f;
     let projHeight = r * f;
-    var left = - projWidth /2;
-    var right = projWidth/2;
-    var bottom = - projHeight/2;
-    var top = projHeight/2;
+    var left = -projWidth / 2;
+    var right = projWidth / 2;
+    var bottom = -projHeight / 2;
+    var top = projHeight / 2;
     var near = 0.1;
     var far = -settings.distance;
     return m4.orthographic(left, right, bottom, top, near, far);
@@ -433,3 +443,24 @@ function GetModelViewMatrix(
 
 
 
+let timer;
+function AutoRotate()
+{
+    // Si hay que girar...
+    if ( settings.autoRotate )
+    {
+        // Vamos rotando una cantiad constante cada 30 ms
+        timer = setInterval( function()
+            {
+                autorot += 0.005;
+                if ( autorot > 2*Math.PI ) autorot -= 2*Math.PI;
+                // Reenderizamos
+                render();
+            }, 30
+        );
+    }
+    else
+    {
+        clearInterval( timer );
+    }
+}
