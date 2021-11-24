@@ -12,6 +12,13 @@ let depthFramebuffer;
 let shadowProgramInfo;
 const depthTextureSize = 2160;
 
+let skyProgramInfo;
+let cubeTexture;
+let skyboxLocation;
+let positionLocation;
+let positionBuffer; //Buffer del box
+let faceInfos; //Caras del box
+
 // Todo: Sacar los settings que no hacen nada
 const settings = {
     lightX: 0.1,
@@ -36,10 +43,37 @@ function setUpWebGL() {
     }
     gl.getExtension('WEBGL_depth_texture');
 
+    faceInfos = [
+        {
+            target: gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+            url: 'https://webglfundamentals.org/webgl/resources/images/computer-history-museum/pos-x.jpg',
+        },
+        {
+            target: gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+            url: 'https://webglfundamentals.org/webgl/resources/images/computer-history-museum/neg-x.jpg',
+        },
+        {
+            target: gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+            url: 'https://webglfundamentals.org/webgl/resources/images/computer-history-museum/pos-y.jpg',
+        },
+        {
+            target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+            url: 'https://webglfundamentals.org/webgl/resources/images/computer-history-museum/neg-y.jpg',
+        },
+        {
+            target: gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+            url: 'https://webglfundamentals.org/webgl/resources/images/computer-history-museum/pos-z.jpg',
+        },
+        {
+            target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
+            url: 'https://webglfundamentals.org/webgl/resources/images/computer-history-museum/neg-z.jpg',
+        },
+    ];
 
     // setup GLSL programs
     toonProgramInfo = webglUtils.createProgramInfo(gl, ['vertex-shader-toon', 'fragment-shader-toon']);
     shadowProgramInfo = webglUtils.createProgramInfo(gl, ['color-vertex-shader', 'color-fragment-shader']);
+    skyProgramInfo = webglUtils.createProgramInfo(gl, ['vertex-shader-sky', 'fragment-shader-sky']);
     // imageTexture = loadImageTexture('https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg');
     set_depth_buffer();
     setSettingUI();
@@ -103,6 +137,69 @@ function drawScene() {
     gl.disable(gl.CULL_FACE) // Eliminamos Las caras que enfrentan a la camara/luz
     // Rendereamos la escena de nuevo para el con el toon shader
     drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix);
+
+    //Tiramos el draw skyBox
+    drawSky(mvp);
+
+}
+
+function drawSky(mvp) {
+    gl.enable(gl.CULL_FACE);
+    gl.enable(gl.DEPTH_TEST);
+
+    positionBuffer = gl.createBuffer();
+    // Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+    cubeTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
+
+    const prog = skyProgramInfo.program;
+    gl.useProgram(prog);
+    webglUtils.setUniforms(prog, {
+        // lightProjectionMatrix * inverse(lightWorldMatrix) * m4.translation(0, 0, 0)
+        viewMatrix: mvp
+    });
+
+    faceInfos.forEach((faceInfo) => {
+        const { target, url } = faceInfo;
+
+        // Upload the canvas to the cubemap face.
+        const level = 0;
+        const internalFormat = gl.RGBA;
+        const width = 512;
+        const height = 512;
+        const format = gl.RGBA;
+        const type = gl.UNSIGNED_BYTE;
+
+        // setup each face so it's immediately renderable
+        gl.texImage2D(target, level, internalFormat, width, height, 0, format, type, null);
+
+        // Asynchronously load an image
+        const image = new Image();
+        image.src = "http://raw.githubusercontent.com/santi-alem/fcg-2021-1c/main/tp5/models/among%20us.obj?token=AETBCF7MJ63I35JFPMZRRYTBUURXO";//url;
+        image.addEventListener('load', function () {
+            // Now that the image has loaded make copy it to the texture.
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
+            gl.texImage2D(target, level, internalFormat, format, type, image);
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+        });
+    });
+    gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+
+    //modelObj.drawSky(skyProgramInfo);
+    // Seteamos solo el buffer de posiciones
+    let Pos = gl.getAttribLocation(prog, "a_position");
+    enableArrayAttribute(positionBuffer, Pos, 3);
+    webglUtils.setUniforms(prog, {
+        color: cubeTexture
+    });
+    // let our quad pass the depth test at 1.0
+    gl.depthFunc(gl.LEQUAL);
+
+    // Draw the geometry.
+    gl.drawArrays(gl.TRIANGLES, 0, 1 * 6);
 }
 
 function drawShadows(lightWorldMatrix, lightProjectionMatrix) {
@@ -455,3 +552,17 @@ function AutoRotate() {
         clearInterval(timer);
     }
 }
+
+function setGeometry(gl) {
+    var positions = new Float32Array(
+        [
+            -1, -1,
+            1, -1,
+            -1, 1,
+            -1, 1,
+            1, -1,
+            1, 1,
+        ]);
+    gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+}
+
