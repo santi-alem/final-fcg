@@ -1,5 +1,5 @@
 class ModelDrawer {
-    constructor(meshData, texture, position, rotationX, rotationY, scale) {
+    constructor(meshData, texture, position, rotation, scale) {
         // TODO: Usar las posiciones y la rotacion
         this.bufferPos = createAndSetBuffer(meshData.positionBuffer);
         this.bufferTex = createAndSetBuffer(meshData.texCoordBuffer);
@@ -7,7 +7,16 @@ class ModelDrawer {
         this.size = meshData.positionBuffer.length / 3;
         this.texture = texture;
         // Todo add rotation and scale
-        this.translation = m4.translation(position[0],position[1],position[2])
+        this.translation = m4.translation(position[0],position[1],position[2]);
+        if (rotation){
+            this.translation = m4.xRotate(this.translation, rotation[0]);
+            this.translation = m4.yRotate(this.translation, rotation[1]);
+            this.translation = m4.zRotate(this.translation, rotation[2]);
+        }
+        if (scale){
+            this.translation = m4.scale(this.translation,scale[0],scale[1],scale[2]);
+        }
+
     }
 
     drawToon(programInfo) {
@@ -23,6 +32,7 @@ class ModelDrawer {
         webglUtils.setUniforms(programInfo, {
             color: this.texture,
             objectMatrix : this.translation,
+            inverseObject: m4.inverse(m4.transpose(this.translation)),
         });
         // Dibujamos
         gl.drawArrays(gl.TRIANGLES, 0, this.size);

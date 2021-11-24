@@ -14,12 +14,13 @@ const depthTextureSize = 2160;
 
 // Todo: Sacar los settings que no hacen nada
 const settings = {
-    lightX: -0.5,
-    lightY: -0.38,
-    shininess: 6,
-    distance: 80,
+    lightX: 0.1,
+    lightY: 0.2,
+    shininess: 60,
+    orthoFar: 80,
     lightDistance: 60,
     shadowBias: -0.01,
+    shadowTextureTranslate: 0.5,
     tipoDeRender: true,
     sombrasProyectadas: true,
     autoRotate: false,
@@ -45,10 +46,10 @@ function setUpWebGL() {
     // Cargamos modelos
     // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/isometric-low-poly-bedroom.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
     // LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/12335_The_Thinker_v3_l2.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg', [0, 1, 0])
-    LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/elefante.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg', [1.25, 0, 0])
-    // LoadObj('https://raw.githubusercontent.com/santi-alem/fcg-2021-1c/main/tp5/models/among%20us.obj?token=AETBCF7MJ63I35JFPMZRRYTBUURXO', 'https://raw.githubusercontent.com/santi-alem/fcg-2021-1c/main/tp5/models/among%20us.jpg?token=AETBCF776WC5EOOPJSW3YGTBUUR4A')
-    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg', [0, -1, 0])
-    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/moon-castle.obj', 'http://i.pinimg.com/originals/44/b1/5a/44b15ad5adfc1f0b195a8fe3c2c09033.jpg', [0, 0, 0])
+    // LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/elefante.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg', [0, 0, 0],[0, 0, 1 * Math.PI])
+    LoadObj('https://raw.githubusercontent.com/santi-alem/fcg-2021-1c/main/tp5/models/among%20us.obj?token=AETBCF7MJ63I35JFPMZRRYTBUURXO', 'https://raw.githubusercontent.com/santi-alem/fcg-2021-1c/main/tp5/models/among%20us.jpg?token=AETBCF776WC5EOOPJSW3YGTBUUR4A',[0, 1, 0])
+    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg', [0, -1, 0], [0, 0, 0], [1.25, 1.25, 1.25])
+    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/moon-castle.obj', 'http://i.pinimg.com/originals/44/b1/5a/44b15ad5adfc1f0b195a8fe3c2c09033.jpg', [0, 0, 0],[0,0,0],[2,2,2])
     // LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/aircraft/tu-160-blackjack/tu-160-blackjack.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg', [0, 0, 0])
 
 }
@@ -66,7 +67,7 @@ function render() {
     // Rendereamos la escena
     drawScene();
 }
-
+let lightRotation;
 function drawScene() {
     // Draw with the toon shader
     let perspectiveMatrix = ProjectionMatrix(canvas, transZ);
@@ -98,22 +99,21 @@ function drawScene() {
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE) // Eliminamos Las caras que enfrentan a la camara/luz
     // Rendereamos en el framebuffer la textura de profundidad para la iluminación
-    drawShadows(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix);
+    drawShadows(lightWorldMatrix, lightProjectionMatrix);
     gl.disable(gl.CULL_FACE) // Eliminamos Las caras que enfrentan a la camara/luz
     // Rendereamos la escena de nuevo para el con el toon shader
     drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix);
 }
 
-function drawShadows(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix) {
+function drawShadows(lightWorldMatrix, lightProjectionMatrix) {
     gl.useProgram(shadowProgramInfo.program);
     // Hacemos el binding del Framebuffer
     gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
     // Seteamos el viewport del tamaño de la textura
     gl.viewport(0, 0, depthTextureSize, depthTextureSize);
-    gl.clearColor(0, 0, 0, 1);
+    gl.clearColor(0.1, 0.2, 0.5, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     // Seteamos las variables uniformes
-    let mvpLight = m4.multiply(lightProjectionMatrix, lightWorldMatrix);
     webglUtils.setUniforms(shadowProgramInfo, {
         // lightProjectionMatrix * inverse(lightWorldMatrix) * m4.translation(0, 0, 0)
         viewMatrix: lightWorldMatrix,
@@ -142,18 +142,14 @@ function drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiv
     textureMatrix = m4.translate(textureMatrix, 0.5, 0.5, 0.5);
     textureMatrix = m4.scale(textureMatrix, 0.5, 0.5, 0.5);
     textureMatrix = m4.multiply(textureMatrix, lightProjectionMatrix);
-    // use the inverse of this world matrix to make
-    // a matrix that will transform other positions
-    // to be relative this world space.
     textureMatrix = m4.multiply(
         textureMatrix,
         lightWorldMatrix);
-    // MV para normales
-    // mv = lightWorldMatrix;
-    // perspectiveMatrix = lightProjectionMatrix;
+        // m4.inverse(lightWorldMatrix));
     // Seteamos todas las uniformes
     let programUniforms = {
         viewMatrix: mv,
+        inverseViewMatrix: m4.inverse(m4.transpose(mv)),
         projectionMatrix: perspectiveMatrix,
         u_textureMatrix: textureMatrix,
         invertida: [
@@ -164,7 +160,7 @@ function drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiv
         ],
         cargada: cargada,
         mostrar: mostrar,
-        l: lightWorldMatrix.slice(8, 11),
+        l: m4.inverse(lightWorldMatrix).slice(8, 11),
         shininess: Math.pow(settings.shininess, 50 / 25),
         u_projectedTexture: depthTexture,
         bias: settings.shadowBias,
@@ -287,7 +283,7 @@ window.onresize = () => {
 }
 
 
-function LoadObj(objectUrl, textureUrl, position = [0, 0, 0], rotation = [0, 0, 0]) {
+function LoadObj(objectUrl, textureUrl, position = [0, 0, 0], rotation = [0, 0, 0], scaleObject = [1, 1, 1]) {
     // Cargamos la textura desde la url
     let texture = loadImageTexture(textureUrl);
     // BUscamos el .obj en la url y lo cargamos
@@ -310,7 +306,7 @@ function LoadObj(objectUrl, textureUrl, position = [0, 0, 0], rotation = [0, 0, 
                 var maxSize = Math.max(size[0], size[1], size[2]);
                 var scale = 1 / maxSize;
                 mesh.shiftAndScale(shift, scale);
-                models.push(new ModelDrawer(mesh.getVertexBuffers(), texture, position));
+                models.push(new ModelDrawer(mesh.getVertexBuffers(), texture, position, rotation, scaleObject));
                 render();
             }
         )
@@ -345,10 +341,11 @@ function setSettingUI() {
     webglLessonsUI.setupUI(document.querySelector('#ui'), settings, [
         {type: 'slider', key: 'lightX', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
         {type: 'slider', key: 'lightY', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
-        {type: 'slider', key: 'distance', min: 0, max: 1000, change: render, precision: 2, step: 1,},
         {type: 'slider', key: 'lightDistance', min: 0, max: 50, change: render, precision: 2, step: 0.1,},
+        {type: 'slider', key: 'orthoFar', min: 0, max: 500, change: render, precision: 2, step: 1,},
         {type: 'slider', key: 'shadowBias', min: -0.01, max: 0.00001, change: render, precision: 4, step: 0.0001,},
-        {type: 'slider', key: 'shininess', min: 4, max: 8, change: render, precision: 4, step: 0.0001,},
+        {type: 'slider', key: 'shininess', min: 30, max: 100, change: render, precision: 4, step: 0.0001,},
+        {type: 'slider', key: 'shadowTextureTranslate', min: 0, max: 1, change: render, precision: 4, step: 0.0001,},
         {type: 'checkbox', key: 'tipoDeRender', change: render,},
         {type: 'checkbox', key: 'sombrasProyectadas', change: render,},
         {type: 'checkbox', key: 'contorno', change: render,},
@@ -362,22 +359,24 @@ function degToRad(d) {
 }
 
 function updateLightDir() {
-    const cy = Math.cos(settings.lightY * Math.PI);
-    const sy = Math.sin(settings.lightY * Math.PI);
-    const cx = Math.cos(settings.lightX * Math.PI);
-    const sx = Math.sin(settings.lightX * Math.PI);
+    const cy = Math.cos(settings.lightY + autorot);
+    const sy = Math.sin(settings.lightY + autorot);
+    const cx = Math.cos(settings.lightX);
+    const sx = Math.sin(settings.lightX);
     return [-sy, cy * sx, -cy * cx];
     // return [, settings.lightY, settings.lightZ]
 
 }
 
+const offset = 5;
+
 // Calcula la matriz de perspectiva (column-major)
 function ProjectionMatrix(c, z, fov_angle = 60) {
     var r = c.width / c.height;
-    var n = (z - 1.74);
+    var n = (z - offset);
     const min_n = 0.001;
     if (n < min_n) n = min_n;
-    var f = (z + 1.74);
+    var f = (z + offset);
     var fov = 3.145 * fov_angle / 180;
     var s = 1 / Math.tan(fov / 2);
     return [
@@ -390,10 +389,7 @@ function ProjectionMatrix(c, z, fov_angle = 60) {
 
 function OrthographicMatrix() {
     var r = canvas.height / canvas.width;
-    var n = (transZ - 1.74);
-    const min_n = 0.001;
-    if (n < min_n) n = min_n;
-    var f = (transZ + 1.74);
+    var f = (transZ + offset);
 
     let projWidth = r * f;
     let projHeight = r * f;
@@ -402,7 +398,7 @@ function OrthographicMatrix() {
     var bottom = -projHeight / 2;
     var top = projHeight / 2;
     var near = 0.1;
-    var far = -settings.distance;
+    var far = -settings.orthoFar;
     return m4.orthographic(left, right, bottom, top, near, far);
 }
 
@@ -442,25 +438,20 @@ function GetModelViewMatrix(
 }
 
 
-
 let timer;
-function AutoRotate()
-{
+
+function AutoRotate() {
     // Si hay que girar...
-    if ( settings.autoRotate )
-    {
+    if (settings.autoRotate) {
         // Vamos rotando una cantiad constante cada 30 ms
-        timer = setInterval( function()
-            {
+        timer = setInterval(function () {
                 autorot += 0.005;
-                if ( autorot > 2*Math.PI ) autorot -= 2*Math.PI;
+                if (autorot > 2 * Math.PI) autorot -= 2 * Math.PI;
                 // Reenderizamos
                 render();
             }, 30
         );
-    }
-    else
-    {
-        clearInterval( timer );
+    } else {
+        clearInterval(timer);
     }
 }
