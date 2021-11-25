@@ -111,7 +111,7 @@
                 vec3 vista = vec3(-vecMV[0], -vecMV[1], -vecMV[2]);
                 vec4 ks = vec4(0.8, 0.8, 0.8, 1.0);
                 vec3 h = normalize(lightDirection + normalize(vista));
-                float vistaR =  dot(h, normalize(normCoord));
+                float vistaR =  dot(h, normalize(normCoord + normShadowCoord));
 
                 vec4 textureColor = texture2D(color, texCoord);
         //      luzNormal = smoothstep(0.0, 0.01, luzNormal) + 0.1;

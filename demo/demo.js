@@ -151,6 +151,18 @@ function drawSky(mvp) {
     // Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
+    // Turn on the position attribute
+    gl.enableVertexAttribArray(positionLocation);
+
+    // Tell the position attribute how to get data out of positionBuffer (ARRAY_BUFFER)
+    var size = 2;          // 2 components per iteration
+    var type = gl.FLOAT;   // the data is 32bit floats
+    var normalize = false; // don't normalize the data
+    var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
+    var offset = 0;        // start at the beginning of the buffer
+    gl.vertexAttribPointer(
+        positionLocation, size, type, normalize, stride, offset);
+
     cubeTexture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
 
@@ -177,7 +189,8 @@ function drawSky(mvp) {
 
         // Asynchronously load an image
         const image = new Image();
-        image.src = "http://raw.githubusercontent.com/santi-alem/fcg-2021-1c/main/tp5/models/among%20us.obj?token=AETBCF7MJ63I35JFPMZRRYTBUURXO";//url;
+        image.src = url;//"http://raw.githubusercontent.com/santi-alem/fcg-2021-1c/main/tp5/models/among%20us.obj?token=AETBCF7MJ63I35JFPMZRRYTBUURXO";//
+        image.crossOrigin = "Anonymous";
         image.addEventListener('load', function () {
             // Now that the image has loaded make copy it to the texture.
             gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
@@ -193,8 +206,12 @@ function drawSky(mvp) {
     let Pos = gl.getAttribLocation(prog, "a_position");
     enableArrayAttribute(positionBuffer, Pos, 3);
     webglUtils.setUniforms(prog, {
-        color: cubeTexture
+        u_skybox: cubeTexture
     });
+
+    skyboxLocation = gl.getUniformLocation(prog, "u_skybox");
+    gl.uniform1i(skyboxLocation, 0);
+
     // let our quad pass the depth test at 1.0
     gl.depthFunc(gl.LEQUAL);
 
