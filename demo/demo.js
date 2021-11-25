@@ -44,7 +44,7 @@ function setUpWebGL() {
     set_depth_buffer();
     setSettingUI();
     // Cargamos modelos
-     LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/the-adventure-zone-taako.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/teapot.jpg', [0, 0, 0], [0, 0, 0], [1, 1, 1])
+     LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/the-adventure-zone-taako.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/tako_tex.png', [0, 0, 0], [0, 0, 0], [1, 1, 1])
     LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/teapot.jpg', [0, -0.78, 0], [0, 0, 0], [1.25, 1.25, 1.25])    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/moon-castle.obj', 'http://i.pinimg.com/originals/44/b1/5a/44b15ad5adfc1f0b195a8fe3c2c09033.jpg', [0, 0, 0],[0,0,0],[2,2,2])
 
 }
