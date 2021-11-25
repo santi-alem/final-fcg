@@ -1,11 +1,11 @@
 'use strict';
 let canvas;
 let gl;
-let rotX = 90, rotY = 0, transZ = 10, autorot = 0;
+let rotX = degToRad(0), rotY = 0, transZ = 10, autorot = 0;
 let models = [];
 let toonProgramInfo;
-let cargada = 0;
-let mostrar = 0;
+let cargada = 1;
+let mostrar = 1;
 let depthTexture;
 let unusedTexture;
 let depthFramebuffer;
@@ -44,13 +44,8 @@ function setUpWebGL() {
     set_depth_buffer();
     setSettingUI();
     // Cargamos modelos
-    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/isometric-low-poly-bedroom.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg')
-    // LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/12335_The_Thinker_v3_l2.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg', [0, 1, 0])
-    // LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/sculpture/elefante.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg', [0, 0, 0],[0, 0, 1 * Math.PI])
-    LoadObj('https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg',[0, 1, 0])
-    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'http://i.pinimg.com/originals/44/b1/5a/44b15ad5adfc1f0b195a8fe3c2c09033.jpg', [0, -1, 0], [0, 0, 0], [1.25, 1.25, 1.25])
-    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/moon-castle.obj', 'http://i.pinimg.com/originals/44/b1/5a/44b15ad5adfc1f0b195a8fe3c2c09033.jpg', [0, 0, 0],[0,0,0],[2,2,2])
-    // LoadObj('https://raw.githubusercontent.com/jaanga/3d-models/gh-pages/obj/aircraft/tu-160-blackjack/tu-160-blackjack.obj', 'https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg', [0, 0, 0])
+     LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/the-adventure-zone-taako.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/teapot.jpg', [0, 0, 0], [0, 0, 0], [1, 1, 1])
+    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/teapot.jpg', [0, -0.78, 0], [0, 0, 0], [1.25, 1.25, 1.25])    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/moon-castle.obj', 'http://i.pinimg.com/originals/44/b1/5a/44b15ad5adfc1f0b195a8fe3c2c09033.jpg', [0, 0, 0],[0,0,0],[2,2,2])
 
 }
 

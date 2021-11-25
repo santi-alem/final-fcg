@@ -106,7 +106,7 @@
         // the 'r' channel has the depth values
         vec4 frame = texture2D(u_projectedTexture, projectedTexcoord.xy);
         float projectedDepth = frame.r;
-        float shadowLight = (inRange && projectedDepth <= currentDepth) ? 0.0 : 1.0;
+        float shadowLight = (inRange && projectedDepth <= currentDepth && sombrasProyectadas == 1.0) ? 0.0 : 1.0;
 //                luzNormal = shadowLight;
         vec3 vista = vec3(-vecMV[0], -vecMV[1], -vecMV[2]);
         vec4 ks = vec4(0.8, 0.8, 0.8, 1.0);
@@ -115,8 +115,7 @@
 
         vec4 textureColor = texture2D(color, texCoord);
 //        luzNormal = smoothstep(0.0, 0.01, luzNormal) + 0.1;
-        luzNormal =  (luzNormal > 0.4 ? 1.0 : 0.0) * tipoLuz + (1.0 - tipoLuz) * (smoothstep(0.0, 0.01, luzNormal) + 0.1);
-        luzNormal =  (sombrasProyectadas == 0.0) ? luzNormal : luzNormal * shadowLight;
+        luzNormal =  (luzNormal > 0.4 ? 1.0 : 0.0) * tipoLuz * shadowLight + (1.0 - tipoLuz) * (smoothstep(0.0, 0.01, luzNormal * shadowLight) + 0.1);
         vec4 diffuseColor = (mostrar != 0.0 && cargada == 1.0) ? textureColor : vec4(0.2, 0.2, 0.2, 1.0);//vec4(1.0,0.0,gl_FragCoord.z*gl_FragCoord.z,1.0);
 
         //Primero está el aura solida en los bordes
