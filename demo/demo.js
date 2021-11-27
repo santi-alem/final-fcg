@@ -180,7 +180,7 @@ function drawSky(mvp) {
 
         // Asynchronously load an image
         const image = new Image();
-        image.src = url;
+        image.src = url;//"https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/duck.png";
         image.crossOrigin = "anonymous";
         image.addEventListener('load', function () {
             // Now that the image has loaded make copy it to the texture.
@@ -251,7 +251,7 @@ function drawSky(mvp) {
     // Set the uniforms
     gl.uniformMatrix4fv(
         viewDirectionProjectionInverseLocation, false,
-        viewDirectionProjectionInverseMatrix);
+        mvp);
 
     // Tell the shader to use texture unit 0 for u_skybox
     gl.uniform1i(skyboxLocation, 0);
