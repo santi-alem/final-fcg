@@ -12,29 +12,25 @@ let depthFramebuffer;
 let shadowProgramInfo;
 const depthTextureSize = 2160;
 
-let skyProgramInfo;
-let texture;
-//Estas tres arrancan al principio de drawSky
-let skyboxLocation;
-let positionLocation;
-let viewDirectionProjectionInverseLocation;
-
-let positionBuffer; //Buffer del box
+let skyboxProgramInfo;
+let skyTexture;
 let faceInfos; //Caras del box
 
 // Todo: Sacar los settings que no hacen nada
 const settings = {
-    lightX: 0.1,
-    lightY: 0.2,
+    lightX: -0.73,
+    lightY: -0.35,
     shininess: 60,
     orthoFar: 80,
     lightDistance: 60,
-    shadowBias: -0.01,
+    shadowBias: -0.005,
     shadowTextureTranslate: 0.5,
     tipoDeRender: true,
     sombrasProyectadas: true,
     autoRotate: false,
-    contorno: false
+    contorno: false,
+    tamanoTrazo: 0.15,
+    tonoTrazo: 0.5,
 };
 
 function setUpWebGL() {
@@ -50,7 +46,7 @@ function setUpWebGL() {
     // setup GLSL programs
     toonProgramInfo = webglUtils.createProgramInfo(gl, ['vertex-shader-toon', 'fragment-shader-toon']);
     shadowProgramInfo = webglUtils.createProgramInfo(gl, ['color-vertex-shader', 'color-fragment-shader']);
-    skyProgramInfo = webglUtils.createProgramInfo(gl, ['vertex-shader-sky', 'fragment-shader-sky']);
+    skyboxProgramInfo = webglUtils.createProgramInfo(gl, ['vertex-shader-sky', 'fragment-shader-sky']);
 
     faceInfos = [
         {
@@ -78,13 +74,14 @@ function setUpWebGL() {
             url: 'https://webglfundamentals.org/webgl/resources/images/computer-history-museum/neg-z.jpg',
         },
     ];
-
+    setSkyBoxTexture();
     // imageTexture = loadImageTexture('https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg');
     set_depth_buffer();
     setSettingUI();
     // Cargamos modelos
+     LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano_tex.png', [1, -0.5, 0], [0, 0, 0], [0.5, 0.5, 0.5])
      LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/the-adventure-zone-taako.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/tako_tex.png', [0, 0, 0], [0, 0, 0], [1, 1, 1])
-    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/teapot.jpg', [0, -0.78, 0], [0, 0, 0], [1.25, 1.25, 1.25])    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/moon-castle.obj', 'http://i.pinimg.com/originals/44/b1/5a/44b15ad5adfc1f0b195a8fe3c2c09033.jpg', [0, 0, 0],[0,0,0],[2,2,2])
+    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/teapot.jpg', [0, -1, 0], [0, 0, 0], [1.75, 1.75, 1.75])    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/moon-castle.obj', 'http://i.pinimg.com/originals/44/b1/5a/44b15ad5adfc1f0b195a8fe3c2c09033.jpg', [0, 0, 0],[0,0,0],[2,2,2])
 
 }
 
@@ -132,40 +129,26 @@ function drawScene() {
     let mvp = m4.multiply(perspectiveMatrix, mv);
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE) // Eliminamos Las caras que enfrentan a la camara/luz
-    // Rendereamos en el framebuffer la textura de profundidad para la iluminación
+    // // Rendereamos en el framebuffer la textura de profundidad para la iluminación
     drawShadows(lightWorldMatrix, lightProjectionMatrix);
     gl.disable(gl.CULL_FACE) // Eliminamos Las caras que enfrentan a la camara/luz
-    // Rendereamos la escena de nuevo para el con el toon shader
+    // Sacamos el framebuffer
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    // Seteamos el viewport del tamaño del canvas
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    drawSky(mv, perspectiveMatrix);
+    // // Rendereamos la escena de nuevo para el con el toon shader
     drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix);
-
     //render sky
-    drawSky(mvp);
 }
 
-function drawSky(mvp) {
-
-    let prog = skyProgramInfo.program;
-
-    // look up where the vertex data needs to go.
-    positionLocation = gl.getAttribLocation(prog, "a_position");
-
-    // lookup uniforms
-    skyboxLocation = gl.getUniformLocation(prog, "u_skybox");
-    viewDirectionProjectionInverseLocation =
-        gl.getUniformLocation(prog, "u_viewDirectionProjectionInverse");
-
-    positionBuffer = gl.createBuffer();
-    // Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    // Put the positions in the buffer
-    setGeometry(gl);
-    
+function setSkyBoxTexture() {
     // Create a texture.
-    texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
-
+    skyTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, skyTexture);
     faceInfos.forEach((faceInfo) => {
-        const { target, url } = faceInfo;
+        const {target, url} = faceInfo;
 
         // Upload the canvas to the cubemap face.
         const level = 0;
@@ -180,87 +163,46 @@ function drawSky(mvp) {
 
         // Asynchronously load an image
         const image = new Image();
-        image.src = url;//"https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/duck.png";
+        image.src = url;
         image.crossOrigin = "anonymous";
-        image.addEventListener('load', function () {
+        image.addEventListener('load', function() {
             // Now that the image has loaded make copy it to the texture.
-            gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, skyTexture);
             gl.texImage2D(target, level, internalFormat, format, type, image);
             gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
         });
     });
     gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
     gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+}
 
-    let fieldOfViewRadians = degToRad(60);
-    let cameraYRotationRadians = degToRad(0);
-
-    let time = 0.5;
-
-    // Tell WebGL how to convert from clip space to pixels
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-
-    gl.enable(gl.CULL_FACE);
-    gl.enable(gl.DEPTH_TEST);
-
-    // Clear the canvas AND the depth buffer.
-    //gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    gl.useProgram(prog);
-
-    // Turn on the position attribute
-    gl.enableVertexAttribArray(positionLocation);
-
-    // Bind the position buffer.
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
-    // Tell the position attribute how to get data out of positionBuffer (ARRAY_BUFFER)
-    var size = 2;          // 2 components per iteration
-    var type = gl.FLOAT;   // the data is 32bit floats
-    var normalize = false; // don't normalize the data
-    var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
-    var offset = 0;        // start at the beginning of the buffer
-    gl.vertexAttribPointer(
-        positionLocation, size, type, normalize, stride, offset);
-
-    // Compute the projection matrix
-    var aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-    var projectionMatrix =
-        m4.perspective(fieldOfViewRadians, aspect, 1, 2000);
-
-    // camera going in circle 2 units from origin looking at origin
-    var cameraPosition = [Math.cos(time * .1), 0, Math.sin(time * .1)];
-    var target = [0, 0, 0];
-    var up = [0, 1, 0];
-    // Compute the camera's matrix using look at.
-    var cameraMatrix = m4.lookAt(cameraPosition, target, up);
-
+function drawSky(mv, projectionMatrix) {
     // Make a view matrix from the camera matrix.
-    var viewMatrix = m4.inverse(cameraMatrix);
-
+    var viewMatrix = m4.inverse(mv);
     // We only care about direciton so remove the translation
     viewMatrix[12] = 0;
     viewMatrix[13] = 0;
     viewMatrix[14] = 0;
-
     var viewDirectionProjectionMatrix =
         m4.multiply(projectionMatrix, viewMatrix);
     var viewDirectionProjectionInverseMatrix =
         m4.inverse(viewDirectionProjectionMatrix);
 
-    // Set the uniforms
-    gl.uniformMatrix4fv(
-        viewDirectionProjectionInverseLocation, false,
-        mvp);
-
-    // Tell the shader to use texture unit 0 for u_skybox
-    gl.uniform1i(skyboxLocation, 0);
-
     // let our quad pass the depth test at 1.0
     gl.depthFunc(gl.LEQUAL);
-
     // Draw the geometry.
-    gl.drawArrays(gl.TRIANGLES, 0, 1 * 6);
+    // draw the skybox
+    // let our quad pass the depth test at 1.0
+    gl.depthFunc(gl.LEQUAL);
+    const quadBufferInfo = primitives.createXYQuadBufferInfo(gl);
+    gl.useProgram(skyboxProgramInfo.program);
+    webglUtils.setBuffersAndAttributes(gl, skyboxProgramInfo, quadBufferInfo);
+    webglUtils.setUniforms(skyboxProgramInfo, {
+        u_viewDirectionProjectionInverse: viewDirectionProjectionInverseMatrix,
+        u_skybox: skyTexture,
+    });
+    webglUtils.drawBufferInfo(gl, quadBufferInfo);
+
 }
 
 // Fill the buffer with the values that define a quad.
@@ -284,8 +226,8 @@ function drawShadows(lightWorldMatrix, lightProjectionMatrix) {
     gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
     // Seteamos el viewport del tamaño de la textura
     gl.viewport(0, 0, depthTextureSize, depthTextureSize);
-    gl.clearColor(0.1, 0.2, 0.5, 1);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    // gl.clearColor(0.1, 0.2, 0.5, 1);
+    gl.clear( gl.DEPTH_BUFFER_BIT);
     // Seteamos las variables uniformes
     webglUtils.setUniforms(shadowProgramInfo, {
         // lightProjectionMatrix * inverse(lightWorldMatrix) * m4.translation(0, 0, 0)
@@ -304,11 +246,7 @@ function drawShadows(lightWorldMatrix, lightProjectionMatrix) {
 
 function drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix) {
     gl.useProgram(toonProgramInfo.program);
-    // Sacamos el framebuffer
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    // Seteamos el viewport del tamaño del canvas
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+
 
     // Creamos una matrix para transformar los puntos del MV en el mundo de iluminacion
     let textureMatrix = m4.identity();
@@ -340,6 +278,8 @@ function drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiv
         tipoLuz: settings.tipoDeRender,
         sombrasProyectadas: settings.sombrasProyectadas,
         contorno: settings.contorno,
+        tamanoTrazo: settings.tamanoTrazo,
+        tonoTrazo: settings.tonoTrazo,
     };
     webglUtils.setUniforms(toonProgramInfo, programUniforms);
     models.forEach(
@@ -522,6 +462,8 @@ function setSettingUI() {
         {type: 'checkbox', key: 'tipoDeRender', change: render,},
         {type: 'checkbox', key: 'sombrasProyectadas', change: render,},
         {type: 'checkbox', key: 'contorno', change: render,},
+        {type: 'slider', key: 'tamanoTrazo', min: 0, max: 0.2, change: render, precision: 4, step: 0.0001,},
+        {type: 'slider', key: 'tonoTrazo', min: 0, max: 1, change: render, precision: 2, step: 0.1,},
         {type: 'checkbox', key: 'autoRotate', change: AutoRotate,}
     ]);
 }

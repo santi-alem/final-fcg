@@ -13,154 +13,157 @@
     <script src="https://webglfundamentals.org/webgl/resources/primitives.js"></script>
 </head>
 <body>
-    <canvas id="canvas"></canvas>
-    <div id="uiContainer">
-        <div id="ui">
-        </div>
+<canvas id="canvas"></canvas>
+<div id="uiContainer">
+    <div id="ui">
     </div>
-    <!-- vertex shader -->
-    <script id="color-vertex-shader" type="x-shader/x-vertex">
-        attribute vec3 pos;
-        uniform mat4 objectMatrix;
-        uniform mat4 viewMatrix;
-        uniform mat4 projectionMatrix;
-        void main() {
-            // Multiply the position by the matrices.
-            gl_Position = projectionMatrix * viewMatrix * objectMatrix * vec4(pos, 1);
-        }
-    </script>
-    <!-- fragment shader -->
-    <script id="color-fragment-shader" type="x-shader/x-fragment">
-        precision mediump float;
-        void main() {
-            gl_FragColor = vec4(gl_FragCoord.x, 1.0 - gl_FragCoord.x, gl_FragCoord.z, 1.0);
-        }
-    </script>
-    <script id="vertex-shader-toon" type="x-shader/x-vertex">
-        attribute vec3 pos;
-        attribute vec2 texPos;
-        attribute vec3 normPos;
+</div>
+<!-- vertex shader -->
+<script id="color-vertex-shader" type="x-shader/x-vertex">
+    attribute vec3 pos;
+    uniform mat4 objectMatrix;
+    uniform mat4 viewMatrix;
+    uniform mat4 projectionMatrix;
+    void main() {
+        // Multiply the position by the matrices.
+        gl_Position = projectionMatrix * viewMatrix * objectMatrix * vec4(pos, 1);
+    }
+</script>
+<!-- fragment shader -->
+<script id="color-fragment-shader" type="x-shader/x-fragment">
+    precision mediump float;
+    void main() {
+        gl_FragColor = vec4(gl_FragCoord.x, 1.0 - gl_FragCoord.x, gl_FragCoord.z, 1.0);
+    }
+</script>
+<script id="vertex-shader-toon" type="x-shader/x-vertex">
+    attribute vec3 pos;
+    attribute vec2 texPos;
+    attribute vec3 normPos;
 
-        uniform mat4 objectMatrix;
-        uniform mat4 viewMatrix;
-        uniform mat4 inverseObject;
-        uniform mat4 inverseViewMatrix;
-        uniform mat4 projectionMatrix;
-        uniform mat4 invertida;
-        uniform mat4 u_textureMatrix;
-        // uniform vec3 l;
-        varying vec2 texCoord;
-        varying vec3 normCoord;
-        varying vec3 normShadowCoord;
-        varying vec4 vertCoord;
-        varying vec4 vecMV;
-        varying vec4 v_projectedTexcoord;
+    uniform mat4 objectMatrix;
+    uniform mat4 viewMatrix;
+    uniform mat4 inverseObject;
+    uniform mat4 inverseViewMatrix;
+    uniform mat4 projectionMatrix;
+    uniform mat4 invertida;
+    uniform mat4 u_textureMatrix;
+    // uniform vec3 l;
+    varying vec2 texCoord;
+    varying vec3 normCoord;
+    varying vec3 normShadowCoord;
+    varying vec4 vertCoord;
+    varying vec4 vecMV;
+    varying vec4 v_projectedTexcoord;
 
-        void main()
-        {
-            vecMV = viewMatrix * objectMatrix * vec4(pos, 1);
-            gl_Position = projectionMatrix * vecMV;
-            vertCoord = vec4(pos, 1);
-            texCoord = texPos;
-            normCoord = mat3(inverseViewMatrix * inverseObject) * normPos;
-            normShadowCoord = mat3(inverseObject) * normPos;
-            v_projectedTexcoord = u_textureMatrix * objectMatrix * vec4(pos, 1);
-        }
-    </script>
-    <!-- fragment shader -->
-    <script id="fragment-shader-toon" type="x-shader/x-fragment">
-            precision mediump float;
-            uniform mat3 mn;
-            uniform vec3 l;
-            uniform float bias;
-            uniform float tipoLuz;
-            uniform float sombrasProyectadas;
-            uniform float contorno;
+    void main()
+    {
+        vecMV = viewMatrix * objectMatrix * vec4(pos, 1);
+        gl_Position = projectionMatrix * vecMV;
+        vertCoord = vec4(pos, 1);
+        texCoord = texPos;
+        normCoord = mat3(inverseViewMatrix * inverseObject) * normPos;
+        normShadowCoord = mat3(inverseObject) * normPos;
+        v_projectedTexcoord = u_textureMatrix * objectMatrix * vec4(pos, 1);
+    }
+</script>
+<!-- fragment shader -->
+<script id="fragment-shader-toon" type="x-shader/x-fragment">
+    precision mediump float;
+    uniform mat3 mn;
+    uniform vec3 l;
+    uniform float bias;
+    uniform float tipoLuz;
+    uniform float sombrasProyectadas;
+    uniform float contorno;
 
-            varying vec2 texCoord;
-            varying vec3 normCoord;
-            varying vec3 normShadowCoord;
-            varying vec4 vertCoord;
-            varying vec4 vecMV;
-            varying vec4 v_projectedTexcoord;
+    varying vec2 texCoord;
+    varying vec3 normCoord;
+    varying vec3 normShadowCoord;
+    varying vec4 vertCoord;
+    varying vec4 vecMV;
+    varying vec4 v_projectedTexcoord;
 
-            uniform float mostrar;
-            uniform float cargada;
-            uniform float shininess;
-            uniform sampler2D color;
-            uniform sampler2D u_projectedTexture;
-            void main()
-            {
-                vec3 lightDirection = normalize((-1.0) * l);
-                float luzNormal = dot(lightDirection, normShadowCoord);
+    uniform float mostrar;
+    uniform float cargada;
+    uniform float shininess;
+    uniform float tamanoTrazo;
+    uniform float tonoTrazo;
+    uniform sampler2D color;
+    uniform sampler2D u_projectedTexture;
+    void main()
+    {
+        vec3 lightDirection = normalize((-1.0) * l);
+        float luzNormal = dot(lightDirection, normShadowCoord);
 
-                vec3 projectedTexcoord = v_projectedTexcoord.xyz / v_projectedTexcoord.w;
-                float currentDepth = projectedTexcoord.z + bias;
+        vec3 projectedTexcoord = v_projectedTexcoord.xyz / v_projectedTexcoord.w;
+        float currentDepth = projectedTexcoord.z + bias;
 
-                bool inRange =
-                projectedTexcoord.x >= 0.0 &&
-                projectedTexcoord.x <= 1.0 &&
-                projectedTexcoord.y >= 0.0 &&
-                projectedTexcoord.y <= 1.0;
+        bool inRange =
+        projectedTexcoord.x >= 0.0 &&
+        projectedTexcoord.x <= 1.0 &&
+        projectedTexcoord.y >= 0.0 &&
+        projectedTexcoord.y <= 1.0;
 
-                // the 'r' channel has the depth values
-                vec4 frame = texture2D(u_projectedTexture, projectedTexcoord.xy);
-                float projectedDepth = frame.r;
-                float shadowLight = (inRange && projectedDepth <= currentDepth && sombrasProyectadas == 1.0) ? 0.0 : 1.0;
+        // the 'r' channel has the depth values
+        vec4 frame = texture2D(u_projectedTexture, projectedTexcoord.xy);
+        float projectedDepth = frame.r;
+        float shadowLight = (inRange && projectedDepth <= currentDepth && sombrasProyectadas == 1.0) ? 0.0 : 1.0;
         //                luzNormal = shadowLight;
-                vec3 vista = vec3(-vecMV[0], -vecMV[1], -vecMV[2]);
-                vec4 ks = vec4(0.8, 0.8, 0.8, 1.0);
-                vec3 h = normalize(lightDirection + normalize(vista));
-                float vistaR =  dot(h, normalize(normCoord + normShadowCoord));
+        vec3 vista = vec3(-vecMV[0], -vecMV[1], -vecMV[2]);
+        vec4 ks = vec4(0.8, 0.8, 0.8, 1.0);
+        vec3 h = normalize(lightDirection + normalize(vista));
+        float vistaR =  dot(h, normalize(normCoord + normShadowCoord));
 
-                vec4 textureColor = texture2D(color, texCoord);
+        vec4 textureColor = texture2D(color, texCoord);
         //        luzNormal = smoothstep(0.0, 0.01, luzNormal) + 0.1;
-                luzNormal =  (luzNormal > 0.4 ? 1.0 : 0.0) * tipoLuz * shadowLight + (1.0 - tipoLuz) * (smoothstep(0.0, 0.01, luzNormal * shadowLight) + 0.1);
-                vec4 diffuseColor = (mostrar != 0.0 && cargada == 1.0) ? textureColor : vec4(0.2, 0.2, 0.2, 1.0);//vec4(1.0,0.0,gl_FragCoord.z*gl_FragCoord.z,1.0);
+        luzNormal =  (luzNormal > 0.4 ? 1.0 : 0.0) * tipoLuz * shadowLight + (1.0 - tipoLuz) * (smoothstep(0.0, 0.01, luzNormal * shadowLight) + 0.1);
+        vec4 diffuseColor = (mostrar != 0.0 && cargada == 1.0) ? textureColor : vec4(0.2, 0.2, 0.2, 1.0);//vec4(1.0,0.0,gl_FragCoord.z*gl_FragCoord.z,1.0);
 
-                //Primero está el aura solida en los bordes
-                float sauronDot = 1.0 - dot(normalize(vista), normalize(normCoord));
-                //float sauronIntenso = smoothstep(0.716 - 0.01, 0.716 + 0.01, sauronDot);
+        //Primero está el aura solida en los bordes
+        float sauronDot = 1.0 - dot(normalize(vista), normalize(normCoord));
+        //float sauronIntenso = smoothstep(0.716 - 0.01, 0.716 + 0.01, sauronDot);
 
-                //Esta aura apareciendo solamente en el area iluminada
-                float sauronIntenso = sauronDot * luzNormal;
-                sauronIntenso = smoothstep(0.716 - 0.05, 0.716 + 0.05, sauronIntenso);
+        //Esta aura apareciendo solamente en el area iluminada
+        float sauronIntenso = sauronDot * luzNormal;
+        sauronIntenso = smoothstep(0.716 - 0.05, 0.716 + 0.05, sauronIntenso);
 
-                //Aura tranca, blend
-                //                sauronIntenso = sauronDot * pow(luzNormal, 0.1);
-                //Primer termino es la luz ambiental
-                vec4 toonColor = (diffuseColor * vec4(0.1, 0.1, 0.1, 1.0) + luzNormal  * (diffuseColor + ks * smoothstep(0.005, 0.01, pow(max(0.0, vistaR), shininess)) / luzNormal)) + vec4(0.1, 0.1, 0.1, 1.0) * sauronIntenso;
-                vec4 outlineColor = vec4(0.8, 0.8, 0.8, 1.0);
-                gl_FragColor =  (abs(dot(normalize(vista), normalize(normCoord))) < 0.10 && contorno == 1.0) ? outlineColor : toonColor;
+        //Aura tranca, blend
+        //                sauronIntenso = sauronDot * pow(luzNormal, 0.1);
+        //Primer termino es la luz ambiental
+        vec4 toonColor = (diffuseColor * vec4(0.1, 0.1, 0.1, 1.0) + luzNormal  * (diffuseColor + ks * smoothstep(0.005, 0.01, pow(max(0.0, vistaR), shininess)) / luzNormal)) + vec4(0.1, 0.1, 0.1, 1.0) * sauronIntenso;
+        vec4 outlineColor = vec4(tonoTrazo, tonoTrazo, tonoTrazo, 1.0);
+        gl_FragColor =  (abs(dot(normalize(vista), normalize(normCoord))) < tamanoTrazo && contorno == 1.0) ? outlineColor : toonColor;
         //        gl_FragColor = vec4(luzNormal,luzNormal,luzNormal, 1.0);
         //                gl_FragColor = vec4(gl_FragCoord.x, 1.0 - gl_FragCoord.x, gl_FragCoord.z, 1.0);
 
-            }
-    </script>
+    }
+</script>
 
-    <!-- vertex shader -->
-    <script id="vertex-shader-sky" type="x-shader/x-vertex">
-        attribute vec4 a_position;
-        varying vec4 v_position;
-        void main() {
-          v_position = a_position;
-          gl_Position = a_position;
-          gl_Position.z = 1.0;
-        }
-    </script>
-    <!-- fragment shader -->
-    <script id="fragment-shader-sky" type="x-shader/x-fragment">
-        precision mediump float;
+<!-- vertex shader -->
+<script id="vertex-shader-sky" type="x-shader/x-vertex">
+    attribute vec4 a_position;
+    uniform mat4 viewMatrix;
+    varying vec4 v_position;
+    void main() {
+        v_position = a_position;
+        gl_Position = a_position;
+        gl_Position.z = 1.0;
+    }
+</script>
+<!-- fragment shader -->
+<script id="fragment-shader-sky" type="x-shader/x-fragment">
+    precision mediump float;
 
-        uniform samplerCube u_skybox;
-        uniform mat4 u_viewDirectionProjectionInverse;
+    uniform samplerCube u_skybox;
+    uniform mat4 u_viewDirectionProjectionInverse;
 
-        varying vec4 v_position;
-        void main() {
-          vec4 t = u_viewDirectionProjectionInverse * v_position;
-          gl_FragColor = textureCube(u_skybox, normalize(t.xyz / t.w));
-        }
-    </script>
+    varying vec4 v_position;
+    void main() {
+        vec4 t = u_viewDirectionProjectionInverse * v_position;
+        gl_FragColor = textureCube(u_skybox, normalize(t.xyz / t.w));
+    }
+</script>
 
 </body>
 
