@@ -50,28 +50,33 @@ function setUpWebGL() {
 
     faceInfos = [
         {
-            target: gl.TEXTURE_CUBE_MAP_POSITIVE_X,
-            url: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/skybox/front.png',
-        },
-        {
-            target: gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
-            url: 'https://webglfundamentals.org/webgl/resources/images/computer-history-museum/neg-x.jpg',
-        },
-        {
             target: gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
-            url: 'https://webglfundamentals.org/webgl/resources/images/computer-history-museum/pos-y.jpg',
+            url: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/skybox/top.png',
+
         },
         {
             target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
-            url: 'https://webglfundamentals.org/webgl/resources/images/computer-history-museum/neg-y.jpg',
+            url: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/skybox/bottom.png',
+
+        },
+        {
+            target: gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+            url: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/skybox/right.png',
+
+        },
+        {
+            target: gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+            url: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/skybox/left.png',
         },
         {
             target: gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
-            url: 'https://webglfundamentals.org/webgl/resources/images/computer-history-museum/pos-z.jpg',
+            url: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/skybox/front.png',
+
         },
         {
             target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
-            url: 'https://webglfundamentals.org/webgl/resources/images/computer-history-museum/neg-z.jpg',
+            url: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/skybox/back.png',
+
         },
     ];
     setSkyBoxTexture();
@@ -79,8 +84,8 @@ function setUpWebGL() {
     set_depth_buffer();
     setSettingUI();
     // Cargamos modelos
-     LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano_tex.png', [1, -0.5, 0], [0, 0, 0], [0.5, 0.5, 0.5])
-     LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/the-adventure-zone-taako.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/tako_tex.png', [0, 0, 0], [0, 0, 0], [1, 1, 1])
+    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano_tex.png', [1, -0.5, 0], [0, 0, 0], [0.5, 0.5, 0.5])
+    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/the-adventure-zone-taako.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/tako_tex.png', [0, 0, 0], [0, 0, 0], [1, 1, 1])
     LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/teapot.jpg', [0, -1, 0], [0, 0, 0], [1.75, 1.75, 1.75])    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/moon-castle.obj', 'http://i.pinimg.com/originals/44/b1/5a/44b15ad5adfc1f0b195a8fe3c2c09033.jpg', [0, 0, 0],[0,0,0],[2,2,2])
 
 }
@@ -98,7 +103,9 @@ function render() {
     // Rendereamos la escena
     drawScene();
 }
+
 let lightRotation;
+
 function drawScene() {
     // Draw with the toon shader
     let perspectiveMatrix = ProjectionMatrix(canvas, transZ);
@@ -121,7 +128,7 @@ function drawScene() {
     );
     // let mv = GetModelViewMatrix(0, 0, transZ, rotX, autorot + rotY);
     mv = m4.xRotate(mv, rotX)
-    mv = m4.yRotate(mv, rotY  + autorot)
+    mv = m4.yRotate(mv, rotY + autorot)
     // Esto es para checkear que la perspectiva de la luz
     // mv = lightWorldMatrix;
     // perspectiveMatrix = lightProjectionMatrix;
@@ -165,7 +172,7 @@ function setSkyBoxTexture() {
         const image = new Image();
         image.src = url;
         image.crossOrigin = "anonymous";
-        image.addEventListener('load', function() {
+        image.addEventListener('load', function () {
             // Now that the image has loaded make copy it to the texture.
             gl.bindTexture(gl.TEXTURE_CUBE_MAP, skyTexture);
             gl.texImage2D(target, level, internalFormat, format, type, image);
@@ -227,7 +234,7 @@ function drawShadows(lightWorldMatrix, lightProjectionMatrix) {
     // Seteamos el viewport del tamaño de la textura
     gl.viewport(0, 0, depthTextureSize, depthTextureSize);
     // gl.clearColor(0.1, 0.2, 0.5, 1);
-    gl.clear( gl.DEPTH_BUFFER_BIT);
+    gl.clear(gl.DEPTH_BUFFER_BIT);
     // Seteamos las variables uniformes
     webglUtils.setUniforms(shadowProgramInfo, {
         // lightProjectionMatrix * inverse(lightWorldMatrix) * m4.translation(0, 0, 0)
@@ -256,7 +263,7 @@ function drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiv
     textureMatrix = m4.multiply(
         textureMatrix,
         lightWorldMatrix);
-        // m4.inverse(lightWorldMatrix));
+    // m4.inverse(lightWorldMatrix));
     // Seteamos todas las uniformes
     let programUniforms = {
         viewMatrix: mv,
