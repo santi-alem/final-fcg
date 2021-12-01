@@ -51,7 +51,7 @@ function setUpWebGL() {
     faceInfos = [
         {
             target: gl.TEXTURE_CUBE_MAP_POSITIVE_X,
-            url: 'https://webglfundamentals.org/webgl/resources/images/computer-history-museum/pos-x.jpg',
+            url: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/skybox/front.png',
         },
         {
             target: gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
@@ -153,8 +153,8 @@ function setSkyBoxTexture() {
         // Upload the canvas to the cubemap face.
         const level = 0;
         const internalFormat = gl.RGBA;
-        const width = 512;
-        const height = 512;
+        const width = 480;
+        const height = 480;
         const format = gl.RGBA;
         const type = gl.UNSIGNED_BYTE;
 
