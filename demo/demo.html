@@ -97,7 +97,8 @@
         float luzNormal = dot(lightDirection, normShadowCoord);
 
         vec3 projectedTexcoord = v_projectedTexcoord.xyz / v_projectedTexcoord.w;
-        float currentDepth = projectedTexcoord.z + bias;
+        //
+        float currentDepth = projectedTexcoord.z + bias * tan(acos(luzNormal));
 
         bool inRange =
         projectedTexcoord.x >= 0.0 &&
