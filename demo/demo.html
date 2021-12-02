@@ -135,9 +135,6 @@
         vec4 toonColor = (diffuseColor * vec4(0.1, 0.1, 0.1, 1.0) + luzNormal  * (diffuseColor + ks * smoothstep(0.005, 0.01, pow(max(0.0, vistaR), shininess)) / luzNormal)) + vec4(0.1, 0.1, 0.1, 1.0) * sauronIntenso;
         vec4 outlineColor = vec4(tonoTrazo, tonoTrazo, tonoTrazo, 1.0);
         gl_FragColor =  (abs(dot(normalize(vista), normalize(normCoord))) < tamanoTrazo && contorno == 1.0) ? outlineColor : toonColor;
-        //        gl_FragColor = vec4(luzNormal,luzNormal,luzNormal, 1.0);
-        //                gl_FragColor = vec4(gl_FragCoord.x, 1.0 - gl_FragCoord.x, gl_FragCoord.z, 1.0);
-
     }
 </script>
 

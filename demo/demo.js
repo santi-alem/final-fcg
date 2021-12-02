@@ -86,7 +86,7 @@ function setUpWebGL() {
     // Cargamos modelos
     LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano_tex.png', [1, -0.5, 0], [0, 0, 0], [0.5, 0.5, 0.5])
     LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/the-adventure-zone-taako.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/tako_tex.png', [0, 0, 0], [0, 0, 0], [1, 1, 1])
-    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/teapot.jpg', [0, -1, 0], [0, 0, 0], [1.75, 1.75, 1.75])    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/moon-castle.obj', 'http://i.pinimg.com/originals/44/b1/5a/44b15ad5adfc1f0b195a8fe3c2c09033.jpg', [0, 0, 0],[0,0,0],[2,2,2])
+    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/torre.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/torre.jpg', [1, -2.9, 0], [0, 0, 0], [2.75, 2.75, 2.75])    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/moon-castle.obj', 'http://i.pinimg.com/originals/44/b1/5a/44b15ad5adfc1f0b195a8fe3c2c09033.jpg', [0, 0, 0],[0,0,0],[2,2,2])
 
 }
 
@@ -135,6 +135,7 @@ function drawScene() {
 
     let mvp = m4.multiply(perspectiveMatrix, mv);
     gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LESS);
     gl.enable(gl.CULL_FACE) // Eliminamos Las caras que enfrentan a la camara/luz
     // // Rendereamos en el framebuffer la textura de profundidad para la iluminación
     drawShadows(lightWorldMatrix, lightProjectionMatrix);
@@ -196,7 +197,6 @@ function drawSky(mv, projectionMatrix) {
         m4.inverse(viewDirectionProjectionMatrix);
 
     // let our quad pass the depth test at 1.0
-    gl.depthFunc(gl.LEQUAL);
     // Draw the geometry.
     // draw the skybox
     // let our quad pass the depth test at 1.0
