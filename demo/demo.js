@@ -21,16 +21,16 @@ const settings = {
     lightX: -0.73,
     lightY: -0.35,
     shininess: 60,
-    orthoFar: 80,
-    lightDistance: 60,
+    orthoFar: 3,
+    lightDistance: 0.30,
     shadowBias: -0.005,
-    shadowTextureTranslate: 0.5,
     tipoDeRender: true,
     sombrasProyectadas: true,
     autoRotate: false,
     contorno: false,
     tamanoTrazo: 0.15,
     tonoTrazo: 0.5,
+    mostrarTextura: true,
 };
 
 function setUpWebGL() {
@@ -86,7 +86,7 @@ function setUpWebGL() {
     // Cargamos modelos
     LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano_tex.png', [1, -0.5, 0], [0, 0, 0], [0.5, 0.5, 0.5])
     LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/the-adventure-zone-taako.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/tako_tex.png', [0, 0, 0], [0, 0, 0], [1, 1, 1])
-    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/torre.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/torre.jpg', [1, -2.9, 0], [0, 0, 0], [2.75, 2.75, 2.75])    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/moon-castle.obj', 'http://i.pinimg.com/originals/44/b1/5a/44b15ad5adfc1f0b195a8fe3c2c09033.jpg', [0, 0, 0],[0,0,0],[2,2,2])
+    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/torre.jpg', [0, -1, 0], [0, 0, 0], [2, 1, 2])    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/moon-castle.obj', 'http://i.pinimg.com/originals/44/b1/5a/44b15ad5adfc1f0b195a8fe3c2c09033.jpg', [0, 0, 0],[0,0,0],[2,2,2])
 
 }
 
@@ -277,7 +277,7 @@ function drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiv
             0, 0, 0, 1,
         ],
         cargada: cargada,
-        mostrar: mostrar,
+        mostrar: settings.mostrarTextura,
         l: m4.inverse(lightWorldMatrix).slice(8, 11),
         shininess: Math.pow(settings.shininess, 50 / 25),
         u_projectedTexture: depthTexture,
@@ -462,7 +462,7 @@ function setSettingUI() {
         {type: 'slider', key: 'lightX', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
         {type: 'slider', key: 'lightY', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
         {type: 'slider', key: 'lightDistance', min: 0, max: 50, change: render, precision: 2, step: 0.1,},
-        {type: 'slider', key: 'orthoFar', min: 0, max: 500, change: render, precision: 2, step: 1,},
+        {type: 'slider', key: 'orthoFar', min: 0, max: 20, change: render, precision: 2, step: 1,},
         {type: 'slider', key: 'shadowBias', min: -0.01, max: 0.00001, change: render, precision: 4, step: 0.0001,},
         {type: 'slider', key: 'shininess', min: 30, max: 100, change: render, precision: 4, step: 0.0001,},
         {type: 'slider', key: 'shadowTextureTranslate', min: 0, max: 1, change: render, precision: 4, step: 0.0001,},
@@ -471,7 +471,8 @@ function setSettingUI() {
         {type: 'checkbox', key: 'contorno', change: render,},
         {type: 'slider', key: 'tamanoTrazo', min: 0, max: 0.2, change: render, precision: 4, step: 0.0001,},
         {type: 'slider', key: 'tonoTrazo', min: 0, max: 1, change: render, precision: 2, step: 0.1,},
-        {type: 'checkbox', key: 'autoRotate', change: AutoRotate,}
+        {type: 'checkbox', key: 'autoRotate', change: AutoRotate,},
+        {type: 'checkbox', key: 'mostrarTextura', change: render,},
     ]);
 }
 
