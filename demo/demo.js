@@ -31,6 +31,7 @@ const settings = {
     tamanoTrazo: 0.15,
     tonoTrazo: 0.5,
     mostrarTextura: true,
+    numeroFases: 1,
 };
 
 function setUpWebGL() {
@@ -278,6 +279,7 @@ function drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiv
         ],
         cargada: cargada,
         mostrar: settings.mostrarTextura,
+        numeroFases: settings.numeroFases,
         l: m4.inverse(lightWorldMatrix).slice(8, 11),
         shininess: Math.pow(settings.shininess, 50 / 25),
         u_projectedTexture: depthTexture,
@@ -472,7 +474,8 @@ function setSettingUI() {
         {type: 'slider', key: 'tamanoTrazo', min: 0, max: 0.2, change: render, precision: 4, step: 0.0001,},
         {type: 'slider', key: 'tonoTrazo', min: 0, max: 1, change: render, precision: 2, step: 0.1,},
         {type: 'checkbox', key: 'autoRotate', change: AutoRotate,},
-        {type: 'checkbox', key: 'mostrarTextura', change: render,},
+        { type: 'checkbox', key: 'mostrarTextura', change: render, },
+        { type: 'slider', key: 'numeroFases', min: 1, max: 10, change: render, precision: 1, step: 1.0, },
     ]);
 }
 
