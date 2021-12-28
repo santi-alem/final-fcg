@@ -467,7 +467,6 @@ function setSettingUI() {
         {type: 'slider', key: 'orthoFar', min: 0, max: 20, change: render, precision: 2, step: 1,},
         {type: 'slider', key: 'shadowBias', min: -0.01, max: 0.00001, change: render, precision: 4, step: 0.0001,},
         {type: 'slider', key: 'shininess', min: 30, max: 100, change: render, precision: 4, step: 0.0001,},
-        {type: 'slider', key: 'shadowTextureTranslate', min: 0, max: 1, change: render, precision: 4, step: 0.0001,},
         {type: 'checkbox', key: 'tipoDeRender', change: render,},
         {type: 'checkbox', key: 'sombrasProyectadas', change: render,},
         {type: 'checkbox', key: 'contorno', change: render,},

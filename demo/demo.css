@@ -8,3 +8,14 @@ canvas {
     display: block;
     background: black;
 }
+
+.gman-widget-outer {
+    float: none;
+}
+
+#ui {
+    width: auto;
+    padding: 7px;
+    background-color: #FFFFFF;
+    border-radius: 2%;
+}
