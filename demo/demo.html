@@ -93,6 +93,7 @@
         v_projectedTexcoord = u_textureMatrix * objectMatrix * vec4(pos, 1);
     }
 </script>
+
 <!-- fragment shader -->
 <script id="fragment-shader-toon" type="x-shader/x-fragment">
     precision mediump float;
@@ -119,6 +120,18 @@
     uniform float tonoTrazo;
     uniform sampler2D color;
     uniform sampler2D u_projectedTexture;
+
+    float diffuseFactor(vec3 normal, vec3 light_direction) {
+        float df = dot(normalize(normal), normalize(light_direction));
+
+        if (gl_FrontFacing) {
+            df = -df;
+        }
+
+        return max(0.0, df);
+    }
+
+
     void main()
     {
         vec3 lightDirection = normalize((-1.0) * l);
@@ -146,17 +159,15 @@
 
         vec4 textureColor = texture2D(color, texCoord);
         //        luzNormal = smoothstep(0.0, 0.01, luzNormal) + 0.1;
-        float luzF = 0.4;
-        const float max_for = 10.0;
-        for (float i = 0.0; i < max_for; i++){
-            if (i == numeroFases){ break; }
-            luzF += (0.5 / numeroFases) * (luzNormal > 0.4 + 0.1 * (i + 1.0)/ numeroFases ? 1.0 : 0.0);
-        }
-
-        luzNormal =  (luzNormal > 0.4 ? 1.0 : 0.0) * tipoLuz * shadowLight +
-        (1.0 - tipoLuz) * (smoothstep(0.0, 0.01, luzNormal * shadowLight) + 0.05);
+//        float luzF = 0.4;
+//        const float max_for = 10.0;
+//        for (float i = 0.0; i < max_for; i++){
+//            if (i == numeroFases){ break; }
+//            luzF += (0.5 / numeroFases) * (luzNormal > 0.4 + 0.1 * (i + 1.0)/ numeroFases ? 1.0 : 0.0);
+//        }
+//        luzNormal =  (luzNormal > 0.4 ? 1.0 : 0.0) * tipoLuz * shadowLight +
+//        (1.0 - tipoLuz) * (smoothstep(0.0, 0.01, luzNormal * shadowLight) + 0.05);
         vec4 diffuseColor = (mostrar != 0.0 && cargada == 1.0) ? textureColor : vec4(0.5, 0.5, 0.5, 1.0);//vec4(1.0,0.0,gl_FragCoord.z*gl_FragCoord.z,1.0);
-
         //Primero está el aura solida en los bordes
         float sauronDot = 1.0 - dot(normalize(vista), normalize(normCoord));
         //float sauronIntenso = smoothstep(0.716 - 0.01, 0.716 + 0.01, sauronDot);
@@ -168,12 +179,25 @@
         //Aura tranca, blend
         //                sauronIntenso = sauronDot * pow(luzNormal, 0.1);
         //Primer termino es la luz ambiental
+
+
+
+        // Define the toon shading steps
+        float nSteps = numeroFases;
+        float step = sqrt(luzNormal * shadowLight) * nSteps;
+        step = max((floor(step) + smoothstep(0.48, 0.52, fract(step))) / nSteps, 0.3);
+
+        // Calculate the surface color
+        vec4 surface_color = diffuseColor * step;
         vec4 toonColor = (diffuseColor * vec4(0.1, 0.1, 0.1, 1.0) +
-        luzNormal  * (diffuseColor + ks * smoothstep(0.005, 0.01, pow(max(0.0, vistaR), shininess)) / luzNormal)) *
-        luzF +
+        step  * (diffuseColor + ks * smoothstep(0.005, 0.01, pow(max(0.0, vistaR), shininess)) / step))+
         vec4(0.1, 0.1, 0.1, 1.0) * sauronIntenso;
+        // Fragment shader output
         vec4 outlineColor = vec4(tonoTrazo, tonoTrazo, tonoTrazo, 1.0);
         gl_FragColor =  (abs(dot(normalize(vista), normalize(normCoord))) < tamanoTrazo && contorno == 1.0) ? outlineColor : toonColor;
+
+
+
     }
 </script>
 
