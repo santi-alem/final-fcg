@@ -2,7 +2,6 @@
 let canvas;
 let gl;
 let rotX = degToRad(0), rotY = 0, transZ = 10, autorot = 0;
-let models = [];
 let toonProgramInfo;
 let cargada = 1;
 let mostrar = 1;
@@ -15,7 +14,7 @@ const depthTextureSize = 2160;
 let skyboxProgramInfo;
 let skyTexture;
 let faceInfos; //Caras del box
-
+let scenes;
 // Todo: Sacar los settings que no hacen nada
 const settings = {
     lightX: -0.73,
@@ -32,6 +31,7 @@ const settings = {
     tonoTrazo: 0.5,
     mostrarTextura: true,
     numeroFases: 1,
+    escena: 0,
 };
 
 function setUpWebGL() {
@@ -77,17 +77,78 @@ function setUpWebGL() {
         {
             target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
             url: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/skybox/back.png',
-
         },
     ];
     setSkyBoxTexture();
     // imageTexture = loadImageTexture('https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg');
     set_depth_buffer();
+
+    let defaultScene = new Scene([
+        {
+            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano.obj',
+            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano_tex.png',
+            position: [1, -0.5, 0],
+            rotation: [0, 0, 0],
+            scale: [0.5, 0.5, 0.5]
+        },
+        {
+            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/the-adventure-zone-taako.obj',
+            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/tako_tex.png',
+            position: [0, 0, 0],
+            rotation: [0, 0, 0],
+            scale: [1, 1, 1]
+        },
+        {
+            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj',
+            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/torre.jpg',
+            position: [0, -1, 0],
+            rotation: [0, 0, 0],
+            scale: [2, 1, 2]
+        }
+    ]);
+    let amongUS = new Scene([
+        {
+            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/among us.obj',
+            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/among us.jpg',
+            position: [0, 0, 0],
+            rotation: [0, 0, 0],
+            scale: [1, 1, 1]
+        },
+        {
+            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj',
+            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/torre.jpg',
+            position: [0, -1, 0],
+            rotation: [0, 0, 0],
+            scale: [2, 1, 2]
+        }
+    ]);
+    let teaPot = new Scene([
+        {
+            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/teapot.obj',
+            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/teapot.jpg',
+            position: [0, 0, 0],
+            rotation: [0, 0, 0],
+            scale: [1, 1, 1]
+        },
+        {
+            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj',
+            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/torre.jpg',
+            position: [0, -1, 0],
+            rotation: [0, 0, 0],
+            scale: [2, 1, 2]
+        }
+    ]);
+    scenes = [
+        defaultScene,
+        amongUS,
+        teaPot,
+    ];
+
     setSettingUI();
     // Cargamos modelos
-    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano_tex.png', [1, -0.5, 0], [0, 0, 0], [0.5, 0.5, 0.5])
-    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/the-adventure-zone-taako.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/tako_tex.png', [0, 0, 0], [0, 0, 0], [1, 1, 1])
-    LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/torre.jpg', [0, -1, 0], [0, 0, 0], [2, 1, 2])    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/moon-castle.obj', 'http://i.pinimg.com/originals/44/b1/5a/44b15ad5adfc1f0b195a8fe3c2c09033.jpg', [0, 0, 0],[0,0,0],[2,2,2])
+    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano_tex.png', [1, -0.5, 0], [0, 0, 0], [0.5, 0.5, 0.5])
+    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/the-adventure-zone-taako.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/tako_tex.png', [0, 0, 0], [0, 0, 0], [1, 1, 1])
+    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/torre.jpg', [0, -1, 0], [0, 0, 0], [2, 1, 2])    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/moon-castle.obj', 'http://i.pinimg.com/originals/44/b1/5a/44b15ad5adfc1f0b195a8fe3c2c09033.jpg', [0, 0, 0],[0,0,0],[2,2,2])
 
 }
 
@@ -133,7 +194,6 @@ function drawScene() {
     // Esto es para checkear que la perspectiva de la luz
     // mv = lightWorldMatrix;
     // perspectiveMatrix = lightProjectionMatrix;
-
     let mvp = m4.multiply(perspectiveMatrix, mv);
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LESS);
@@ -244,11 +304,7 @@ function drawShadows(lightWorldMatrix, lightProjectionMatrix) {
     });
 
     // Dibujamos cada objeto
-    models.forEach(
-        (modelObj) => {
-            modelObj.drawShadow(shadowProgramInfo)
-        }
-    )
+    scenes[settings.escena].drawShadow(shadowProgramInfo)
 }
 
 
@@ -291,11 +347,7 @@ function drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiv
         tonoTrazo: settings.tonoTrazo,
     };
     webglUtils.setUniforms(toonProgramInfo, programUniforms);
-    models.forEach(
-        (modelObj) => {
-            modelObj.drawToon(toonProgramInfo)
-        }
-    )
+    scenes[settings.escena].drawToon(toonProgramInfo)
 }
 
 
@@ -405,35 +457,35 @@ window.onresize = () => {
 }
 
 
-function LoadObj(objectUrl, textureUrl, position = [0, 0, 0], rotation = [0, 0, 0], scaleObject = [1, 1, 1]) {
-    // Cargamos la textura desde la url
-    let texture = loadImageTexture(textureUrl);
-    // BUscamos el .obj en la url y lo cargamos
-    fetch(objectUrl).then(response => {
-        response.text().then(
-            text => {
-                var mesh = new ObjMesh;
-                mesh.parse(text);
-                var box = mesh.getBoundingBox();
-                var shift = [
-                    -(box.min[0] + box.max[0]) / 2,
-                    -(box.min[1] + box.max[1]) / 2,
-                    -(box.min[2] + box.max[2]) / 2
-                ];
-                var size = [
-                    (box.max[0] - box.min[0]) / 2,
-                    (box.max[1] - box.min[1]) / 2,
-                    (box.max[2] - box.min[2]) / 2
-                ];
-                var maxSize = Math.max(size[0], size[1], size[2]);
-                var scale = 1 / maxSize;
-                mesh.shiftAndScale(shift, scale);
-                models.push(new ModelDrawer(mesh.getVertexBuffers(), texture, position, rotation, scaleObject));
-                render();
-            }
-        )
-    })
-}
+// function LoadObj(objectUrl, textureUrl, position = [0, 0, 0], rotation = [0, 0, 0], scaleObject = [1, 1, 1]) {
+//     // Cargamos la textura desde la url
+//     let texture = loadImageTexture(textureUrl);
+//     // BUscamos el .obj en la url y lo cargamos
+//     fetch(objectUrl).then(response => {
+//         response.text().then(
+//             text => {
+//                 var mesh = new ObjMesh;
+//                 mesh.parse(text);
+//                 var box = mesh.getBoundingBox();
+//                 var shift = [
+//                     -(box.min[0] + box.max[0]) / 2,
+//                     -(box.min[1] + box.max[1]) / 2,
+//                     -(box.min[2] + box.max[2]) / 2
+//                 ];
+//                 var size = [
+//                     (box.max[0] - box.min[0]) / 2,
+//                     (box.max[1] - box.min[1]) / 2,
+//                     (box.max[2] - box.min[2]) / 2
+//                 ];
+//                 var maxSize = Math.max(size[0], size[1], size[2]);
+//                 var scale = 1 / maxSize;
+//                 mesh.shiftAndScale(shift, scale);
+//                 models.push(new ModelDrawer(mesh.getVertexBuffers(), texture, position, rotation, scaleObject));
+//                 render();
+//             }
+//         )
+//     })
+// }
 
 // Funcion para cargar una textura de una URL
 function loadImageTexture(url) {
@@ -475,6 +527,7 @@ function setSettingUI() {
         {type: 'checkbox', key: 'autoRotate', change: AutoRotate,},
         { type: 'checkbox', key: 'mostrarTextura', change: render, },
         { type: 'slider', key: 'numeroFases', min: 1, max: 10, change: render, precision: 1, step: 1.0, },
+        { type: 'slider', key: 'escena', min: 0, max: scenes.length - 1, change: render, precision: 1, step: 1.0, },
     ]);
 }
 
