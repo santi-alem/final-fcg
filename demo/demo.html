@@ -165,6 +165,13 @@
 //            if (i == numeroFases){ break; }
 //            luzF += (0.5 / numeroFases) * (luzNormal > 0.4 + 0.1 * (i + 1.0)/ numeroFases ? 1.0 : 0.0);
 //        }
+        float step = sqrt(luzNormal * shadowLight) * numeroFases;
+        if(tipoLuz==0.0){
+            step = max((floor(step) + smoothstep(0.48, 0.52, fract(step))) / numeroFases, 0.3);
+        }else{
+            step = max((floor(step) + smoothstep(0.5, 0.5, fract(step))) / numeroFases, 0.3);
+        }
+        luzNormal = step;
 //        luzNormal =  (luzNormal > 0.4 ? 1.0 : 0.0) * tipoLuz * shadowLight +
 //        (1.0 - tipoLuz) * (smoothstep(0.0, 0.01, luzNormal * shadowLight) + 0.05);
         vec4 diffuseColor = (mostrar != 0.0 && cargada == 1.0) ? textureColor : vec4(0.5, 0.5, 0.5, 1.0);//vec4(1.0,0.0,gl_FragCoord.z*gl_FragCoord.z,1.0);
@@ -182,15 +189,10 @@
 
 
 
-        // Define the toon shading steps
-        float nSteps = numeroFases;
-        float step = sqrt(luzNormal * shadowLight) * nSteps;
-        step = max((floor(step) + smoothstep(0.48, 0.52, fract(step))) / nSteps, 0.3);
 
         // Calculate the surface color
-        vec4 surface_color = diffuseColor * step;
         vec4 toonColor = (diffuseColor * vec4(0.1, 0.1, 0.1, 1.0) +
-        step  * (diffuseColor + ks * smoothstep(0.005, 0.01, pow(max(0.0, vistaR), shininess)) / step))+
+        luzNormal  * (diffuseColor + ks * smoothstep(0.005, 0.01, pow(max(0.0, vistaR), shininess)) / luzNormal)) +
         vec4(0.1, 0.1, 0.1, 1.0) * sauronIntenso;
         // Fragment shader output
         vec4 outlineColor = vec4(tonoTrazo, tonoTrazo, tonoTrazo, 1.0);
