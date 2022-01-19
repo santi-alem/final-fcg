@@ -154,7 +154,7 @@
         vec4 frame = texture2D(u_projectedTexture, projectedTexcoord.xy);
         float projectedDepth = frame.r;
         float shadowLight = (inRange && projectedDepth <= currentDepth && sombrasProyectadas == 1.0) ? 0.0 : 1.0;
-        float shadowBorder = abs(dFdx(shadowLight)) + abs(dFdy(shadowLight));
+        float shadowBorder = abs(dFdx(shadowLight)) + abs(dFdy(shadowLight)) < 1.0 ? 0.0 : 1.0;
 
         // luzNormal = shadowLight;
         vec3 vista = vec3(-vecMV[0], -vecMV[1], -vecMV[2]);
@@ -172,16 +172,16 @@
         // }
 
         float cameraDistance = gl_FragCoord.z / gl_FragCoord.w;
-        float distanceBorder = abs(dFdx(cameraDistance)) + abs(dFdy(cameraDistance));
+        float distanceBorder = abs(dFdx(cameraDistance)) + abs(dFdy(cameraDistance)) < 1.0 ? 0.0 : 1.0;
 
         float step = sqrt(luzNormal * shadowLight) * numeroFases;
         float bordeFases = 0.0;
         if (tipoLuz==0.0){
             step = max((floor(step) + smoothstep(0.48, 0.52, fract(step))) / numeroFases, 0.3);
         } else {
+            if (0.499 < fract(step) && fract(step) < 0.51) { bordeFases=1.0;}
             step = max((floor(step) + smoothstep(0.5, 0.5, fract(step))) / numeroFases, 0.3);
         }
-        if (0.499 < fract(step) && fract(step) < 0.51) { bordeFases=1.0; }
         luzNormal = step;
         // luzNormal = (luzNormal > 0.4 ? 1.0 : 0.0) * tipoLuz * shadowLight +
         // (1.0 - tipoLuz) * (smoothstep(0.0, 0.01, luzNormal * shadowLight) + 0.05);
@@ -205,9 +205,10 @@
         luzNormal * (diffuseColor + ks * smoothstep(0.005, 0.01, pow(max(0.0, vistaR), shininess)) / luzNormal)) +
         vec4(0.1, 0.1, 0.1, 1.0) * sauronIntenso;
         // Fragment shader output
-        vec4 outlineColor = vec4(tonoTrazo, tonoTrazo, tonoTrazo, 0.5);
-        float normalBorder = abs(dot(normalize(vista), normalize(normCoord))) < tamanoTrazo ? 1.0:0.0;
-        float bordes = bordeFases +  distanceBorder + normalBorder  + shadowBorder;
+        vec4 outlineColor = vec4(tonoTrazo, tonoTrazo, tonoTrazo, 1.0);
+
+        float normalBorder = abs(dot(normalize(vista), normalize(normCoord))) <= tamanoTrazo ? 1.0:0.0;
+        float bordes = bordeFases +  distanceBorder + shadowBorder;
         float esAlgunBorde = bordes >= 1.0 ? 1.0 : 0.0;
         gl_FragColor = (esAlgunBorde == 1.0 && contorno == 1.0) ? outlineColor : toonColor;
         //    gl_FragColor = vec4(esAlgunBorde, esAlgunBorde, esAlgunBorde, 1.0);
