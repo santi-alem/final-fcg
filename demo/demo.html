@@ -207,8 +207,8 @@
         // Fragment shader output
         vec4 outlineColor = vec4(tonoTrazo, tonoTrazo, tonoTrazo, 1.0);
 
-        float normalBorder = abs(dot(normalize(vista), normalize(normCoord))) <= tamanoTrazo ? 1.0:0.0;
-        float bordes = bordeFases +  distanceBorder + shadowBorder;
+        float normalBorder = abs(dot(normalize(vista), normalize(normCoord)))  < tamanoTrazo ? 1.0:0.0;
+        float bordes = normalBorder + bordeFases +  distanceBorder + shadowBorder;
         float esAlgunBorde = bordes >= 1.0 ? 1.0 : 0.0;
         gl_FragColor = (esAlgunBorde == 1.0 && contorno == 1.0) ? outlineColor : toonColor;
         //    gl_FragColor = vec4(esAlgunBorde, esAlgunBorde, esAlgunBorde, 1.0);
