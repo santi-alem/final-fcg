@@ -154,7 +154,6 @@
         vec4 frame = texture2D(u_projectedTexture, projectedTexcoord.xy);
         float projectedDepth = frame.r;
         float shadowLight = (inRange && projectedDepth <= currentDepth && sombrasProyectadas == 1.0) ? 0.0 : 1.0;
-        float shadowBorder = abs(dFdx(shadowLight)) + abs(dFdy(shadowLight)) < 1.0 ? 0.0 : 1.0;
 
         // luzNormal = shadowLight;
         vec3 vista = vec3(-vecMV[0], -vecMV[1], -vecMV[2]);
@@ -172,13 +171,13 @@
         // }
 
         float cameraDistance = gl_FragCoord.z / gl_FragCoord.w;
-        float distanceBorder = abs(dFdx(cameraDistance)) + abs(dFdy(cameraDistance)) < 1.0 ? 0.0 : 1.0;
 
         float step = sqrt(luzNormal * shadowLight) * numeroFases;
         float bordeFases = 0.0;
         if (tipoLuz==0.0){
             step = max((floor(step) + smoothstep(0.48, 0.52, fract(step))) / numeroFases, 0.3);
         } else {
+            //Si es el limite entre fases lo marco
             if (0.499 < fract(step) && fract(step) < 0.51) { bordeFases=1.0;}
             step = max((floor(step) + smoothstep(0.5, 0.5, fract(step))) / numeroFases, 0.3);
         }
@@ -200,6 +199,7 @@
         //Primer termino es la luz ambiental
 
 
+
         // Calculate the surface color
         vec4 toonColor = (diffuseColor * vec4(0.1, 0.1, 0.1, 1.0) +
         luzNormal * (diffuseColor + ks * smoothstep(0.005, 0.01, pow(max(0.0, vistaR), shininess)) / luzNormal)) +
@@ -207,11 +207,16 @@
         // Fragment shader output
         vec4 outlineColor = vec4(tonoTrazo, tonoTrazo, tonoTrazo, 1.0);
 
+        // Bordes
+        // Solo quiero que se vea el contorno de la sombra proyectada si no esta en la "fase" más oscura
+        float shadowBorder = abs(dFdx(shadowLight)) + abs(dFdy(shadowLight)) >= 1.0 && step > 0.3 ? 1.0 : 0.0;
+        float distanceBorder = abs(dFdx(cameraDistance)) + abs(dFdy(cameraDistance)) < 1.0 ? 0.0 : 1.0;
         float normalBorder = abs(dot(normalize(vista), normalize(normCoord)))  < tamanoTrazo ? 1.0:0.0;
         float bordes = normalBorder + bordeFases +  distanceBorder + shadowBorder;
         float esAlgunBorde = bordes >= 1.0 ? 1.0 : 0.0;
+
+
         gl_FragColor = (esAlgunBorde == 1.0 && contorno == 1.0) ? outlineColor : toonColor;
-        //    gl_FragColor = vec4(esAlgunBorde, esAlgunBorde, esAlgunBorde, 1.0);
     }
 </script>
 

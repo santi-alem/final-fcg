@@ -20,8 +20,8 @@ const settings = {
     lightX: -0.73,
     lightY: -0.35,
     shininess: 60,
-    orthoFar: 3,
-    lightDistance: 0.30,
+    orthoFar: 20,
+    lightDistance: 2.0,
     shadowBias: -0.005,
     tipoDeRender: true,
     sombrasProyectadas: true,
@@ -30,8 +30,9 @@ const settings = {
     tamanoTrazo: 0.15,
     tonoTrazo: 0.5,
     mostrarTextura: true,
+    cullFaces: true,
     numeroFases: 1,
-    escena: 0,
+    escena: 1,
 };
 
 function setUpWebGL() {
@@ -197,7 +198,7 @@ function drawScene() {
     let mvp = m4.multiply(perspectiveMatrix, mv);
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LESS);
-    gl.enable(gl.CULL_FACE) // Eliminamos Las caras que enfrentan a la camara/luz
+    if(settings.cullFaces) gl.enable(gl.CULL_FACE); // Eliminamos Las caras que enfrentan a la camara/luz
     // // Rendereamos en el framebuffer la textura de profundidad para la iluminación
     drawShadows(lightWorldMatrix, lightProjectionMatrix);
     gl.disable(gl.CULL_FACE) // Eliminamos Las caras que enfrentan a la camara/luz
@@ -526,6 +527,7 @@ function setSettingUI() {
         {type: 'slider', key: 'tonoTrazo', min: 0, max: 1, change: render, precision: 2, step: 0.1,},
         {type: 'checkbox', key: 'autoRotate', change: AutoRotate,},
         { type: 'checkbox', key: 'mostrarTextura', change: render, },
+        { type: 'checkbox', key: 'cullFaces', change: render, },
         { type: 'slider', key: 'numeroFases', min: 1, max: 10, change: render, precision: 1, step: 1.0, },
         { type: 'slider', key: 'escena', min: 0, max: scenes.length - 1, change: render, precision: 1, step: 1.0, },
     ]);
