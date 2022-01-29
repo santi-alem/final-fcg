@@ -31,7 +31,7 @@ const settings = {
     tonoTrazo: 0.5,
     mostrarTextura: true,
     cullFaces: true,
-    numeroFases: 1,
+    numeroFases: 2,
     escena: 1,
 };
 
@@ -145,7 +145,7 @@ function setUpWebGL() {
         teaPot,
     ];
 
-    setSettingUI();
+    // setSettingUI(); No usamos más esto.
     // Cargamos modelos
     // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano_tex.png', [1, -0.5, 0], [0, 0, 0], [0.5, 0.5, 0.5])
     // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/the-adventure-zone-taako.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/tako_tex.png', [0, 0, 0], [0, 0, 0], [1, 1, 1])
