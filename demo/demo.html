@@ -59,7 +59,7 @@
                     </div>
                     <div class="control" >
                         <label for="numeroFases"> Cantidad de Fases</label>
-                        <input value="1" type="number" id="numeroFases" name="numeroFases" onchange="changeFases()" max="8" min="1" id="input-numero-fases" class="form-control" placeholder="Número de Fases">
+                        <input type="number" id="numeroFases" name="numeroFases" onchange="setRangeValueSetting('numeroFases','numeroFases')" max="8" min="1" id="input-numero-fases" class="form-control" placeholder="Número de Fases">
                         <label for="shininess" class="form-label">Shininess</label>
                         <input type="range" class="form-range" id="shininess" oninput="setRangeValueSetting('shininess','shininess')" min="30" max="100" step="1">
                     </div>
@@ -136,10 +136,6 @@
     }
     function changeScene(number) {
         settings.escena = number;
-        render();
-    }
-    function changeFases() {
-        settings.numeroFases = document.getElementById("input-numero-fases").value;
         render();
     }
     updateAutoRotate = () =>{setBooleanSetting('autoRotate','autoRotate');AutoRotate()}
