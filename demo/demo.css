@@ -10,9 +10,12 @@ body {
 }
 .col-10 {
     width: 88% !important;
+    height: 100vh;
 }
 .col-2 {
     width: 12% !important;
+    height: 100vh;
+    overflow: auto;
 }
 .margin-less {
     padding-left: 0 !important;
@@ -31,10 +34,8 @@ body {
     color: rgb(213, 213, 213);
     padding: 10px;
     display: flow;
-    font-size: smaller;
-    height: 100vh;
+    font-size: 0.9em;
 }
-
 
 canvas {
     width: 100%;
