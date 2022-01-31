@@ -80,8 +80,8 @@ function setUpWebGL() {
             url: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/skybox/back.png',
         },
     ];
+    //Cargamos las texturas a la skyBox
     setSkyBoxTexture();
-    // imageTexture = loadImageTexture('https://raw.githubusercontent.com/gfxfundamentals/webgl-fundamentals/master/webgl/resources/models/windmill/windmill_001_base_COL.jpg');
     set_depth_buffer();
 
     let defaultScene = new Scene([
@@ -145,12 +145,6 @@ function setUpWebGL() {
         teaPot,
     ];
 
-    // setSettingUI(); No usamos más esto.
-    // Cargamos modelos
-    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano_tex.png', [1, -0.5, 0], [0, 0, 0], [0.5, 0.5, 0.5])
-    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/the-adventure-zone-taako.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/tako_tex.png', [0, 0, 0], [0, 0, 0], [1, 1, 1])
-    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj', 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/torre.jpg', [0, -1, 0], [0, 0, 0], [2, 1, 2])    // LoadObj('https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/moon-castle.obj', 'http://i.pinimg.com/originals/44/b1/5a/44b15ad5adfc1f0b195a8fe3c2c09033.jpg', [0, 0, 0],[0,0,0],[2,2,2])
-
 }
 
 
@@ -183,23 +177,19 @@ function drawScene() {
     lightWorldMatrix = m4.xRotate(lightWorldMatrix, settings.lightX * Math.PI)
     lightWorldMatrix = m4.yRotate(lightWorldMatrix, settings.lightY * Math.PI + autorot)
     // Armamos el MV y MVP para la pasada del toon shader
-    // lightWorldMatrix = GetModelViewMatrix(0, 0, transZ, settings.lightX, settings.lightX);
     let mv = m4.lookAt(
         [0, 0, transZ],          // position
         [0, 0, 0], // target
         [0, 1, 0],                                              // up
     );
-    // let mv = GetModelViewMatrix(0, 0, transZ, rotX, autorot + rotY);
     mv = m4.xRotate(mv, rotX)
     mv = m4.yRotate(mv, rotY + autorot)
     // Esto es para checkear que la perspectiva de la luz
-    // mv = lightWorldMatrix;
-    // perspectiveMatrix = lightProjectionMatrix;
     let mvp = m4.multiply(perspectiveMatrix, mv);
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LESS);
     if(settings.cullFaces) gl.enable(gl.CULL_FACE); // Eliminamos Las caras que enfrentan a la camara/luz
-    // // Rendereamos en el framebuffer la textura de profundidad para la iluminación
+    // Rendereamos en el framebuffer la textura de profundidad para la iluminación
     drawShadows(lightWorldMatrix, lightProjectionMatrix);
     gl.disable(gl.CULL_FACE) // Eliminamos Las caras que enfrentan a la camara/luz
     // Sacamos el framebuffer
@@ -207,26 +197,28 @@ function drawScene() {
     // Seteamos el viewport del tamaño del canvas
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.clear(gl.COLOR_BUFFER_BIT);
+    //render sky
     drawSky(mv, perspectiveMatrix);
     // // Rendereamos la escena de nuevo para el con el toon shader
     drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix);
-    //render sky
 }
 
 function setSkyBoxTexture() {
     // Create a texture.
     skyTexture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, skyTexture);
-    faceInfos.forEach((faceInfo) => {
-        const {target, url} = faceInfo;
 
-        // Upload the canvas to the cubemap face.
-        const level = 0;
-        const internalFormat = gl.RGBA;
-        const width = 512;
-        const height = 512;
-        const format = gl.RGBA;
-        const type = gl.UNSIGNED_BYTE;
+    // Upload the canvas to the cubemap face.
+    const level = 0;
+    const internalFormat = gl.RGBA;
+    const width = 512;
+    const height = 512;
+    const format = gl.RGBA;
+    const type = gl.UNSIGNED_BYTE;
+    faceInfos.forEach((faceInfo) => {
+        //Target: cara que vamos a cargar
+        //URL: dirección de la textura
+        const {target, url} = faceInfo;
 
         // setup each face so it's immediately renderable
         gl.texImage2D(target, level, internalFormat, width, height, 0, format, type, null);
@@ -295,11 +287,9 @@ function drawShadows(lightWorldMatrix, lightProjectionMatrix) {
     gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
     // Seteamos el viewport del tamaño de la textura
     gl.viewport(0, 0, depthTextureSize, depthTextureSize);
-    // gl.clearColor(0.1, 0.2, 0.5, 1);
     gl.clear(gl.DEPTH_BUFFER_BIT);
     // Seteamos las variables uniformes
     webglUtils.setUniforms(shadowProgramInfo, {
-        // lightProjectionMatrix * inverse(lightWorldMatrix) * m4.translation(0, 0, 0)
         viewMatrix: lightWorldMatrix,
         projectionMatrix: lightProjectionMatrix
     });
@@ -312,7 +302,6 @@ function drawShadows(lightWorldMatrix, lightProjectionMatrix) {
 function drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix) {
     gl.useProgram(toonProgramInfo.program);
 
-
     // Creamos una matrix para transformar los puntos del MV en el mundo de iluminacion
     let textureMatrix = m4.identity();
     textureMatrix = m4.translate(textureMatrix, 0.5, 0.5, 0.5);
@@ -321,7 +310,6 @@ function drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiv
     textureMatrix = m4.multiply(
         textureMatrix,
         lightWorldMatrix);
-    // m4.inverse(lightWorldMatrix));
     // Seteamos todas las uniformes
     let programUniforms = {
         viewMatrix: mv,
@@ -415,7 +403,6 @@ function set_depth_buffer() {
 
 
 // Seteamos los eventos
-
 window.onload = () => {
     canvas = document.querySelector('#canvas');
     canvas.zoom = function (s) {
@@ -458,35 +445,6 @@ window.onresize = () => {
 }
 
 
-// function LoadObj(objectUrl, textureUrl, position = [0, 0, 0], rotation = [0, 0, 0], scaleObject = [1, 1, 1]) {
-//     // Cargamos la textura desde la url
-//     let texture = loadImageTexture(textureUrl);
-//     // BUscamos el .obj en la url y lo cargamos
-//     fetch(objectUrl).then(response => {
-//         response.text().then(
-//             text => {
-//                 var mesh = new ObjMesh;
-//                 mesh.parse(text);
-//                 var box = mesh.getBoundingBox();
-//                 var shift = [
-//                     -(box.min[0] + box.max[0]) / 2,
-//                     -(box.min[1] + box.max[1]) / 2,
-//                     -(box.min[2] + box.max[2]) / 2
-//                 ];
-//                 var size = [
-//                     (box.max[0] - box.min[0]) / 2,
-//                     (box.max[1] - box.min[1]) / 2,
-//                     (box.max[2] - box.min[2]) / 2
-//                 ];
-//                 var maxSize = Math.max(size[0], size[1], size[2]);
-//                 var scale = 1 / maxSize;
-//                 mesh.shiftAndScale(shift, scale);
-//                 models.push(new ModelDrawer(mesh.getVertexBuffers(), texture, position, rotation, scaleObject));
-//                 render();
-//             }
-//         )
-//     })
-// }
 
 // Funcion para cargar una textura de una URL
 function loadImageTexture(url) {
