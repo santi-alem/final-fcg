@@ -22,7 +22,7 @@ const settings = {
     shininess: 60,
     orthoFar: 20,
     lightDistance: 2.0,
-    shadowBias: -0.005,
+    shadowBias: -0.00001,
     tipoDeRender: true,
     sombrasProyectadas: true,
     autoRotate: false,
@@ -31,8 +31,8 @@ const settings = {
     tonoTrazo: 0.5,
     mostrarTextura: true,
     cullFaces: true,
-    numeroFases: 2,
-    escena: 1,
+    numeroFases: 1,
+    escena: 0,
 };
 
 function setUpWebGL() {
@@ -88,15 +88,15 @@ function setUpWebGL() {
         {
             meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano.obj',
             textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano_tex.png',
-            position: [1, -0.5, 0],
-            rotation: [0, 0, 0],
+            position: [0.8, -0.5, 0],
+            rotation: [0, 1, 0],
             scale: [0.5, 0.5, 0.5]
         },
         {
             meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/the-adventure-zone-taako.obj',
             textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/tako_tex.png',
-            position: [0, 0, 0],
-            rotation: [0, 0, 0],
+            position: [-0.4, -0.009, 0.1],
+            rotation: [0, 0.89, 0],
             scale: [1, 1, 1]
         },
         {
@@ -111,7 +111,7 @@ function setUpWebGL() {
         {
             meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/among us.obj',
             textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/among us.jpg',
-            position: [0, 0, 0],
+            position: [0.12, 0, 0],
             rotation: [0, 0, 0],
             scale: [1, 1, 1]
         },
@@ -140,9 +140,9 @@ function setUpWebGL() {
         }
     ]);
     scenes = [
-        defaultScene,
         amongUS,
         teaPot,
+        defaultScene,
     ];
 
 }

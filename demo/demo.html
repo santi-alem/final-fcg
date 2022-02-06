@@ -258,6 +258,7 @@
 
         vec3 projectedTexcoord = v_projectedTexcoord.xyz / v_projectedTexcoord.w;
         float currentDepth = projectedTexcoord.z + bias * tan(acos(luzNormal));
+        float cameraDistance = gl_FragCoord.z / gl_FragCoord.w;
 
         bool inRange =
         projectedTexcoord.x >= 0.0 &&
@@ -278,7 +279,6 @@
 
         vec4 textureColor = texture2D(color, texCoord);
 
-        float cameraDistance = gl_FragCoord.z / gl_FragCoord.w;
 
         float step = sqrt(luzNormal * shadowLight) * numeroFases;
         float bordeFases = 0.0;
@@ -309,12 +309,12 @@
 
         // Bordes
         // Solo quiero que se vea el contorno de la sombra proyectada si no esta en la "fase" más oscura
-        float shadowBorder = abs(dFdx(shadowLight)) + abs(dFdy(shadowLight)) >= 1.0 && step > 0.3 ? 1.0 : 0.0;
-        float distanceBorder = abs(dFdx(cameraDistance)) + abs(dFdy(cameraDistance)) < 1.0 ? 0.0 : 1.0;
+        float bordeLimite = 0.5;
+        float shadowBorder = smoothstep(0.06, 0.06, length(vec2(dFdx(shadowLight), dFdy(shadowLight)))) >= 1.0 && step > 0.3 && sombrasProyectadas == 1.0? 1.0 : 0.0;
+        float distanceBorder = smoothstep(0.06, 0.06, length(vec2(dFdx(cameraDistance), dFdy(cameraDistance))));
         float normalBorder = abs(dot(normalize(vista), normalize(normCoord)))  < tamanoTrazo ? 1.0:0.0;
         float bordes = normalBorder + bordeFases +  distanceBorder + shadowBorder;
         float esAlgunBorde = bordes >= 1.0 ? 1.0 : 0.0;
-
         gl_FragColor = (esAlgunBorde == 1.0 && contorno == 1.0) ? outlineColor : toonColor;
     }
 </script>
