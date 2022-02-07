@@ -54,31 +54,31 @@ function setUpWebGL() {
     faceInfos = [
         {
             target: gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
-            url: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/skybox/top.png',
+            url: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/skybox/top.png',
 
         },
         {
             target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
-            url: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/skybox/bottom.png',
+            url: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/skybox/bottom.png',
 
         },
         {
             target: gl.TEXTURE_CUBE_MAP_POSITIVE_X,
-            url: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/skybox/right.png',
+            url: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/skybox/right.png',
 
         },
         {
             target: gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
-            url: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/skybox/left.png',
+            url: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/skybox/left.png',
         },
         {
             target: gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
-            url: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/skybox/front.png',
+            url: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/skybox/front.png',
 
         },
         {
             target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
-            url: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/skybox/back.png',
+            url: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/skybox/back.png',
         },
     ];
     //Cargamos las texturas a la skyBox
@@ -88,22 +88,22 @@ function setUpWebGL() {
 
     let defaultScene = new Scene([
         {
-            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano.obj',
-            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/enano_tex.png',
+            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/enano.obj',
+            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/enano_tex.png',
             position: [0.8, -0.5, 0],
             rotation: [0, 1, 0],
             scale: [0.5, 0.5, 0.5]
         },
         {
-            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/the-adventure-zone-taako.obj',
-            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/tako_tex.png',
+            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/the-adventure-zone-taako.obj',
+            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/tako_tex.png',
             position: [-0.4, -0.009, 0.1],
             rotation: [0, 0.89, 0],
             scale: [1, 1, 1]
         },
         {
-            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj',
-            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/torre.jpg',
+            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/plano.obj',
+            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/torre.jpg',
             position: [0, -1, 0],
             rotation: [0, 0, 0],
             scale: [2, 1, 2]
@@ -111,15 +111,15 @@ function setUpWebGL() {
     ]);
     let amongUS = new Scene([
         {
-            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/among us.obj',
-            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/among us.jpg',
+            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/among us.obj',
+            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/among us.jpg',
             position: [0.12, 0, 0],
             rotation: [0, 0, 0],
             scale: [1, 1, 1]
         },
         {
-            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj',
-            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/torre.jpg',
+            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/plano.obj',
+            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/torre.jpg',
             position: [0, -1, 0],
             rotation: [0, 0, 0],
             scale: [2, 1, 2]
@@ -127,22 +127,22 @@ function setUpWebGL() {
     ]);
     let amongUS2 = new Scene([
         {
-            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/among us.obj',
+            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/among us.obj',
             textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/among%20us2.jpg',
             position: [1, 1, 1.5],
             rotation: [0, 1, 0],
             scale: [0.5, 0.5, 0.5]
         },
         {
-            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/among us.obj',
-            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/among us.jpg',
+            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/among us.obj',
+            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/among us.jpg',
             position: [0.0, 0, 0],
             rotation: [0, 0, 0],
             scale: [1, 1, 1]
         },
         {
-            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj',
-            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/torre.jpg',
+            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/plano.obj',
+            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/torre.jpg',
             position: [0, -1, 0],
             rotation: [0, 0, 0],
             scale: [2, 1, 2]
@@ -160,15 +160,15 @@ function setUpWebGL() {
     ]);
     let teaPot = new Scene([
         {
-            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/teapot.obj',
-            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/teapot.jpg',
+            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/teapot.obj',
+            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/teapot.jpg',
             position: [0, 0, 0],
             rotation: [0, 0, 0],
             scale: [1, 1, 1]
         },
         {
-            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj',
-            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/torre.jpg',
+            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/plano.obj',
+            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/torre.jpg',
             position: [0, -1, 0],
             rotation: [0, 0, 0],
             scale: [2, 1, 2]
