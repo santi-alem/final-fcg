@@ -326,11 +326,11 @@
 
         // Bordes
         // Solo quiero que se vea el contorno de la sombra proyectada si no esta en la "fase" más oscura
-        float bordeLimite = 0.5;
-        float shadowBorder = smoothstep(0.06, 0.06, fwidth(shadowLight)) >= 1.0 && step > 0.3 && sombrasProyectadas == 1.0 ? 1.0 : 0.0;
+        // Con el tipo de toonshader con smoothstep queda raro el outline de la sombra proyectada en algunas partes.
+        float shadowBorder = smoothstep(0.06, 0.06, fwidth(shadowLight)) >= 1.0 && step > 0.3 && tipoLuz == 1.0 && sombrasProyectadas == 1.0 ? 1.0 : 0.0;
         float distanceBorder = smoothstep(0.06, 0.06, fwidth(cameraDistance));
         float normalBorder = abs(dot(normalize(vista), normalize(normCoord))) < tamanoTrazo ? 1.0:0.0;
-        float bordes = normalBorder + bordeFases +  distanceBorder + shadowBorder;
+        float bordes = normalBorder + bordeFases + distanceBorder + shadowBorder;
         float esAlgunBorde = bordes >= 1.0 ? 1.0 : 0.0;
         gl_FragColor = (esAlgunBorde == 1.0 && contorno == 1.0) ? outlineColor : toonColor;
     }

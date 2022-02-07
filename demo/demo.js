@@ -9,7 +9,7 @@ let depthTexture;
 let unusedTexture;
 let depthFramebuffer;
 let shadowProgramInfo;
-const depthTextureSize = 2160;
+const depthTextureSize = 2048;
 
 let skyboxProgramInfo;
 let skyTexture;
