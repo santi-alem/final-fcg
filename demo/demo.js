@@ -125,6 +125,39 @@ function setUpWebGL() {
             scale: [2, 1, 2]
         }
     ]);
+    let amongUS2 = new Scene([
+        {
+            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/among us.obj',
+            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/among us2.obj',
+            position: [1, 1, 1.5],
+            rotation: [0, 1, 0],
+            scale: [0.5, 0.5, 0.5]
+        },
+        {
+            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/among us.obj',
+            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/among us.jpg',
+            position: [0.0, 0, 0],
+            rotation: [0, 0, 0],
+            scale: [1, 1, 1]
+        },
+        {
+            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/plano.obj',
+            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/torre.jpg',
+            position: [0, -1, 0],
+            rotation: [0, 0, 0],
+            scale: [2, 1, 2]
+        }
+    ]);
+
+    let casaScene = new Scene([
+        {
+            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/medieval-house-008.obj',
+            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/casa.jpg',
+            position: [0, 0, 0],
+            rotation: [0, 0, 0],
+            scale: [3.4, 3.4, 3.4]
+        },
+    ]);
     let teaPot = new Scene([
         {
             meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/teapot.obj',
@@ -143,8 +176,10 @@ function setUpWebGL() {
     ]);
     scenes = [
         amongUS,
+        amongUS2,
         teaPot,
         defaultScene,
+        casaScene,
     ];
 
 }
