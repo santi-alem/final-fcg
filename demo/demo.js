@@ -15,6 +15,8 @@ let skyboxProgramInfo;
 let skyTexture;
 let faceInfos; //Caras del box
 let scenes;
+let userScene;
+
 // Todo: Sacar los settings que no hacen nada
 const settings = {
     lightX: -0.73,
@@ -32,7 +34,7 @@ const settings = {
     mostrarTextura: true,
     cullFaces: true,
     numeroFases: 1,
-    escena: 0,
+    scene: 0,
 };
 
 function setUpWebGL() {
@@ -149,15 +151,6 @@ function setUpWebGL() {
         }
     ]);
 
-    let casaScene = new Scene([
-        {
-            meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/medieval-house-008.obj',
-            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/casa.jpg',
-            position: [0, 0, 0],
-            rotation: [0, 0, 0],
-            scale: [3.4, 3.4, 3.4]
-        },
-    ]);
     let teaPot = new Scene([
         {
             meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/teapot.obj',
@@ -174,12 +167,16 @@ function setUpWebGL() {
             scale: [2, 1, 2]
         }
     ]);
+
+    //Escena vacía para poder cargar modelos.
+    userScene = new Scene([])
+
     scenes = [
         amongUS,
         amongUS2,
         teaPot,
         defaultScene,
-        casaScene,
+        userScene,
     ];
 
 }
@@ -308,7 +305,7 @@ function drawShadows(lightWorldMatrix, lightProjectionMatrix) {
     });
 
     // Dibujamos cada objeto
-    scenes[settings.escena].drawShadow(shadowProgramInfo)
+    scenes[settings.scene].drawShadow(shadowProgramInfo)
 }
 
 
@@ -349,7 +346,7 @@ function drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiv
         tonoTrazo: settings.tonoTrazo,
     };
     webglUtils.setUniforms(toonProgramInfo, programUniforms);
-    scenes[settings.escena].drawToon(toonProgramInfo)
+    scenes[settings.scene].drawToon(toonProgramInfo)
 }
 
 
@@ -573,5 +570,67 @@ function AutoRotate() {
         );
     } else {
         clearInterval(timer);
+    }
+}
+let modelTexture;
+function loadUserSceneModel(param){
+    if ( param.files && param.files[0] )
+    {
+        document.getElementById("escena5").disabled = false;
+        document.getElementById("escena5").checked = true;
+
+        var reader = new FileReader();
+        reader.onload = function(e)
+        {
+            modelTexture = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, modelTexture);
+            // Fallback por si la textura no carga
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 0, 255, 255]));
+            var mesh = new ObjMesh;
+            mesh.parse( e.target.result );
+            var box = mesh.getBoundingBox();
+            var shift = [
+                -(box.min[0]+box.max[0])/2,
+                -(box.min[1]+box.max[1])/2,
+                -(box.min[2]+box.max[2])/2
+            ];
+            var size = [
+                (box.max[0]-box.min[0])/2,
+                (box.max[1]-box.min[1])/2,
+                (box.max[2]-box.min[2])/2
+            ];
+            var maxSize = Math.max( size[0], size[1], size[2] );
+            var scale = 1/maxSize;
+            mesh.shiftAndScale( shift, scale );
+            let model = new ModelDrawer(mesh.getVertexBuffers(), modelTexture, [0,0,0], [0,0,0], [1,1,1]);
+            userScene.models = [model];
+            settings.scene = scenes.length - 1;
+            render()
+        }
+        reader.readAsText( param.files[0] );
+
+    }
+}
+// Cargar textura
+function loadUserSceneTexture( param )
+{
+    if ( param.files && param.files[0] )
+    {
+        var reader = new FileReader();
+        reader.onload = function(e)
+        {
+            var img = document.getElementById('texture-img');
+            img.onload = function()
+            {
+                gl.bindTexture(gl.TEXTURE_2D, modelTexture);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+                gl.generateMipmap(gl.TEXTURE_2D);
+                userScene.models[0].texture = modelTexture;
+                render();
+            }
+            img.src = e.target.result;
+
+        };
+        reader.readAsDataURL( param.files[0] );
     }
 }

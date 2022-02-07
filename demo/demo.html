@@ -120,7 +120,21 @@
                         <div class="form-check"> <label for="escena4"> Escena 4</label>
                         <input type="radio" name="escena" id="escena4"
                                onchange="changeScene(3)"></div>
+                        <div class="form-check"> <label for="escena5"> Escena Usuario</label>
+                            <input type="radio" name="escena" id="escena5"
+                                   onchange="changeScene(4)" disabled></div>
                     </div>
+                    <hr/>
+                    <h6>Cargar modelo</h6>
+                    <div class="input-group input-group-sm">
+                        <label for="obj">Modelo:</label>
+                        <input id="obj" type="file" onchange="loadUserSceneModel(this)" accept=".obj"/>
+                    </div>
+                    <div class="input-group input-group-sm">
+                        <label for="texture">Textura:</label>
+                        <input id="texture" type="file" onchange="loadUserSceneTexture(this)" accept="image/*"/>
+                    </div>
+                    <img id="texture-img"/>
                 </div>
             </div>
         </div>
@@ -138,7 +152,7 @@
         render()
     }
     function changeScene(number) {
-        settings.escena = number;
+        settings.scene = number;
         render();
     }
     updateAutoRotate = () =>{setBooleanSetting('autoRotate','autoRotate');AutoRotate()}
@@ -150,7 +164,7 @@
         document.getElementById("contorno").checked = settings["contorno"];
         document.getElementById("mostrarTextura").checked = settings["mostrarTextura"];
         document.getElementById("cullFaces").checked = settings["cullFaces"];
-        document.getElementById(`escena${settings.escena + 1}`).checked = true;
+        document.getElementById(`escena${settings.scene + 1}`).checked = true;
         document.getElementById("lightX").value = settings["lightX"];
         document.getElementById("lightY").value = settings["lightY"];
         document.getElementById("shininess").value = settings["shininess"];

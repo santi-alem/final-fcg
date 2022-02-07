@@ -69,3 +69,8 @@ canvas {
     background-color: #FFFFFF;
     border-radius: 2%;
 }
+
+#texture-img {
+    width: 100%;
+    margin-top: 10px;
+}
