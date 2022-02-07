@@ -128,7 +128,7 @@ function setUpWebGL() {
     let amongUS2 = new Scene([
         {
             meshUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/demo/demo/models/among us.obj',
-            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/among us2.obj',
+            textureUrl: 'https://raw.githubusercontent.com/santi-alem/final-fcg/main/demo/models/among%20us2.jpg',
             position: [1, 1, 1.5],
             rotation: [0, 1, 0],
             scale: [0.5, 0.5, 0.5]
