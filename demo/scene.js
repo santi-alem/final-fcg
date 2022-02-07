@@ -8,7 +8,7 @@ class Scene {
     loadObj(meshUrl, textureUrl, position = [0, 0, 0], rotation = [0, 0, 0], modelScale = [1, 1, 1]) {
         // Cargamos la textura desde la url
         let texture = loadImageTexture(textureUrl);
-        // BUscamos el .obj en la url y lo cargamos
+        // Buscamos el .obj en la url y lo cargamos
         fetch(meshUrl).then(response => {
             response.text().then(
                 text => {

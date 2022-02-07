@@ -42,10 +42,11 @@ function setUpWebGL() {
     if (!gl) {
         return;
     }
+    // Activamos las extensiones
     gl.getExtension('WEBGL_depth_texture');
     gl.getExtension('OES_standard_derivatives');
     gl.getExtension('EXT_shader_texture_lod');
-    // setup GLSL programs
+    // Utilizamos webglUtils.createProgramInfo para crear los programas y manejar las variables asociadas a cada uno
     toonProgramInfo = webglUtils.createProgramInfo(gl, ['vertex-shader-toon', 'fragment-shader-toon']);
     shadowProgramInfo = webglUtils.createProgramInfo(gl, ['color-vertex-shader', 'color-fragment-shader']);
     skyboxProgramInfo = webglUtils.createProgramInfo(gl, ['vertex-shader-sky', 'fragment-shader-sky']);
@@ -82,6 +83,7 @@ function setUpWebGL() {
     ];
     //Cargamos las texturas a la skyBox
     setSkyBoxTexture();
+    // Seteamos la textura y el framebuffer para el shadow map
     set_depth_buffer();
 
     let defaultScene = new Scene([
@@ -147,15 +149,10 @@ function setUpWebGL() {
 
 }
 
-
-// Draw the scene.
 function render() {
     // Hacemos el resize del canvas
     webglUtils.resizeCanvasToDisplaySize(gl.canvas);
-    // Tell WebGL how to convert from clip space to pixels
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    // gl.enable(gl.CULL_FACE);
-    // Clear the canvas AND the depth buffer.
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     // Rendereamos la escena
     drawScene();
@@ -164,7 +161,6 @@ function render() {
 let lightRotation;
 
 function drawScene() {
-    // Draw with the toon shader
     let perspectiveMatrix = ProjectionMatrix(canvas, transZ);
     //Creamos la matriz de proyeccion de la camara
     let lightProjectionMatrix = OrthographicMatrix();
@@ -199,6 +195,8 @@ function drawScene() {
     gl.clear(gl.COLOR_BUFFER_BIT);
     //render sky
     drawSky(mv, perspectiveMatrix);
+
+    gl.depthFunc(gl.LESS);
     // // Rendereamos la escena de nuevo para el con el toon shader
     drawModels(lightWorldMatrix, lightProjectionMatrix, mv, mvp, perspectiveMatrix);
 }
@@ -239,9 +237,7 @@ function setSkyBoxTexture() {
 }
 
 function drawSky(mv, projectionMatrix) {
-    // Make a view matrix from the camera matrix.
     var viewMatrix = m4.inverse(mv);
-    // We only care about direciton so remove the translation
     viewMatrix[12] = 0;
     viewMatrix[13] = 0;
     viewMatrix[14] = 0;
@@ -250,11 +246,8 @@ function drawSky(mv, projectionMatrix) {
     var viewDirectionProjectionInverseMatrix =
         m4.inverse(viewDirectionProjectionMatrix);
 
-    // let our quad pass the depth test at 1.0
-    // Draw the geometry.
-    // draw the skybox
-    // let our quad pass the depth test at 1.0
     gl.depthFunc(gl.LEQUAL);
+    // primitives.createXYQuadBufferInfo nos sirve para generar la geometría del skybox
     const quadBufferInfo = primitives.createXYQuadBufferInfo(gl);
     gl.useProgram(skyboxProgramInfo.program);
     webglUtils.setBuffersAndAttributes(gl, skyboxProgramInfo, quadBufferInfo);
@@ -264,21 +257,6 @@ function drawSky(mv, projectionMatrix) {
     });
     webglUtils.drawBufferInfo(gl, quadBufferInfo);
 
-}
-
-// Fill the buffer with the values that define a quad.
-//FUNCIÓN PARA EL SKY
-function setGeometry(gl) {
-    var positions = new Float32Array(
-        [
-            -1, -1,
-            1, -1,
-            -1, 1,
-            -1, 1,
-            1, -1,
-            1, 1,
-        ]);
-    gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
 }
 
 function drawShadows(lightWorldMatrix, lightProjectionMatrix) {
@@ -370,10 +348,9 @@ function set_depth_buffer() {
         gl.DEPTH_ATTACHMENT,  // attachment point
         gl.TEXTURE_2D,        // texture target
         depthTexture,         // texture
-        0);                   // mip level
+        0);             // mip level, tiene que estar desactivado el mip mapping para esta textura
 
-    // create a color texture of the same size as the depth texture
-    // see article why this is needed_
+    // Hay que crear una textura de color aunque no se use
     gl.bindTexture(gl.TEXTURE_2D, unusedTexture);
     gl.texImage2D(
         gl.TEXTURE_2D,
@@ -391,14 +368,14 @@ function set_depth_buffer() {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-    // attach it to the framebuffer
+    // Realizamos el binding al framebuffer
     gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
     gl.framebufferTexture2D(
-        gl.FRAMEBUFFER,        // target
-        gl.COLOR_ATTACHMENT0,  // attachment point
-        gl.TEXTURE_2D,         // texture target
-        unusedTexture,         // texture
-        0);                    // mip level
+        gl.FRAMEBUFFER,
+        gl.COLOR_ATTACHMENT0,
+        gl.TEXTURE_2D,
+        unusedTexture,
+        0);
 }
 
 
@@ -447,63 +424,31 @@ window.onresize = () => {
 
 
 // Funcion para cargar una textura de una URL
+
 function loadImageTexture(url) {
-    // Create a texture.
+    // Creamos la textura
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
-    // Fill the texture with a 1x1 blue pixel.
+    // Fallback por si la textura no carga
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
         new Uint8Array([0, 0, 255, 255]));
-    // Asynchronously load an image
+
+    // Cargamos la imagen desde la url
     const image = new Image();
     image.crossOrigin = "";
     image.src = url;
     image.addEventListener('load', function () {
-        // Now that the image has loaded make copy it to the texture.
+        // Realizamos el binding de la textura y asociamos la imagen
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-        // assumes this texture is a power of 2
         gl.generateMipmap(gl.TEXTURE_2D);
     });
     return texture;
 }
 
-// Funcion para cargar una textura de una URL
-
-function setSettingUI() {
-    webglLessonsUI.setupUI(document.querySelector('#ui'), settings, [
-        {type: 'slider', key: 'lightX', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
-        {type: 'slider', key: 'lightY', min: -1, max: 1, change: render, precision: 2, step: 0.001,},
-        {type: 'slider', key: 'lightDistance', min: 0, max: 50, change: render, precision: 2, step: 0.1,},
-        {type: 'slider', key: 'orthoFar', min: 0, max: 20, change: render, precision: 2, step: 1,},
-        {type: 'slider', key: 'shadowBias', min: -0.01, max: -0.0001, change: render, precision: 4, step: 0.0001,},
-        {type: 'slider', key: 'shininess', min: 30, max: 100, change: render, precision: 4, step: 0.0001,},
-        {type: 'checkbox', key: 'tipoDeRender', change: render,},
-        {type: 'checkbox', key: 'sombrasProyectadas', change: render,},
-        {type: 'checkbox', key: 'contorno', change: render,},
-        {type: 'slider', key: 'tamanoTrazo', min: 0, max: 0.2, change: render, precision: 4, step: 0.0001,},
-        {type: 'slider', key: 'tonoTrazo', min: 0, max: 1, change: render, precision: 2, step: 0.1,},
-        {type: 'checkbox', key: 'autoRotate', change: AutoRotate,},
-        { type: 'checkbox', key: 'mostrarTextura', change: render, },
-        { type: 'checkbox', key: 'cullFaces', change: render, },
-        { type: 'slider', key: 'numeroFases', min: 1, max: 10, change: render, precision: 1, step: 1.0, },
-        { type: 'slider', key: 'escena', min: 0, max: scenes.length - 1, change: render, precision: 1, step: 1.0, },
-    ]);
-}
-
 // todo: Mover a un Archivo propio
 function degToRad(d) {
     return d * Math.PI / 180;
-}
-
-function updateLightDir() {
-    const cy = Math.cos(settings.lightY + autorot);
-    const sy = Math.sin(settings.lightY + autorot);
-    const cx = Math.cos(settings.lightX);
-    const sx = Math.sin(settings.lightX);
-    return [-sy, cy * sx, -cy * cx];
-    // return [, settings.lightY, settings.lightZ]
-
 }
 
 const offset = 5;
@@ -554,6 +499,8 @@ function rotationMatrix(rotationX, rotationY) {
     ];
     return m4.multiply(matrizX, matrizY);
 }
+
+
 
 function GetModelViewMatrix(
     translationX,
