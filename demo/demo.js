@@ -24,7 +24,7 @@ const settings = {
     shininess: 60,
     orthoFar: 20,
     lightDistance: 2.0,
-    shadowBias: -0.0001,
+    shadowBias: 0.0001,
     tipoDeRender: true,
     sombrasProyectadas: true,
     autoRotate: false,
