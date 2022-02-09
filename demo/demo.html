@@ -301,7 +301,7 @@
             step = max((floor(step) + smoothstep(0.48, 0.52, fract(step))) / numeroFases, 0.3);
         } else {
             //Si es el limite entre fases lo marco
-            if (0.499 < fract(step) && fract(step) < 0.51) { bordeFases=1.0;}
+            if (0.5 < fract(step) && fract(step) < 0.51) { bordeFases=1.0;}
             step = max((floor(step) + smoothstep(0.5, 0.5, fract(step))) / numeroFases, 0.3);
         }
         luzNormal = step;
