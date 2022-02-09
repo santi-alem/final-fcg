@@ -8,12 +8,11 @@ body {
     padding-left: 0;
     padding-right: 0;
 }
-.col-10 {
-    width: 88% !important;
-    height: 100vh;
-}
-.col-2 {
-    width: 12% !important;
+/*# {*/
+/*    width: 88% !important;*/
+/*    height: 100vh;*/
+/*}*/
+#settings-column {
     height: 100vh;
     overflow: auto;
 }
