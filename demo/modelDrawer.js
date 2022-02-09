@@ -1,12 +1,11 @@
 class ModelDrawer {
+    // Clase para manejar , las uniformes, los atributos y buffers propias de los modelos
     constructor(meshData, texture, position, rotation, scale) {
-        // TODO: Usar las posiciones y la rotacion
         this.bufferPos = createAndSetBuffer(meshData.positionBuffer);
         this.bufferTex = createAndSetBuffer(meshData.texCoordBuffer);
         this.bufferNorm = createAndSetBuffer(meshData.normalBuffer);
         this.size = meshData.positionBuffer.length / 3;
         this.texture = texture;
-        // Todo add rotation and scale
         this.translation = m4.translation(position[0],position[1],position[2]);
         if (rotation){
             this.translation = m4.xRotate(this.translation, rotation[0]);

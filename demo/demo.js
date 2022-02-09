@@ -49,6 +49,7 @@ function setUpWebGL() {
     gl.getExtension('OES_standard_derivatives');
     gl.getExtension('EXT_shader_texture_lod');
     // Utilizamos webglUtils.createProgramInfo para crear los programas y manejar las variables asociadas a cada uno
+    // Los shaders estan en demo.html
     toonProgramInfo = webglUtils.createProgramInfo(gl, ['vertex-shader-toon', 'fragment-shader-toon']);
     shadowProgramInfo = webglUtils.createProgramInfo(gl, ['color-vertex-shader', 'color-fragment-shader']);
     skyboxProgramInfo = webglUtils.createProgramInfo(gl, ['vertex-shader-sky', 'fragment-shader-sky']);
@@ -190,8 +191,6 @@ function render() {
     drawScene();
 }
 
-let lightRotation;
-
 function drawScene() {
     let perspectiveMatrix = ProjectionMatrix(canvas, transZ);
     //Creamos la matriz de proyeccion de la camara
@@ -250,15 +249,14 @@ function setSkyBoxTexture() {
         //URL: dirección de la textura
         const {target, url} = faceInfo;
 
-        // setup each face so it's immediately renderable
         gl.texImage2D(target, level, internalFormat, width, height, 0, format, type, null);
 
-        // Asynchronously load an image
+        // Cargamos la imagen
         const image = new Image();
         image.src = url;
         image.crossOrigin = "anonymous";
         image.addEventListener('load', function () {
-            // Now that the image has loaded make copy it to the texture.
+            // Asociamos la imagen a la cara una vez que cargue.
             gl.bindTexture(gl.TEXTURE_CUBE_MAP, skyTexture);
             gl.texImage2D(target, level, internalFormat, format, type, image);
             gl.generateMipmap(gl.TEXTURE_CUBE_MAP);

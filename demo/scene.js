@@ -1,4 +1,5 @@
 class Scene {
+    // Clase para cargar y rendererizar los modelos de una escena .
     constructor(modelsSettings) {
         this.models = [];
         for (const model of modelsSettings) {
